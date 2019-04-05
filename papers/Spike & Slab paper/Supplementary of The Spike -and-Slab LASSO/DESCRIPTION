@@ -1,0 +1,9 @@
+Package: SSL
+Version: 0.0-1
+Date: 2016-04-08
+Title: The Spike-and-Slab LASSO
+Author: Veronika Rockova [aut,cre], Sangin Lee [ctb]
+Maintainer: Veronika Rockova <vrockova@wharton.upenn.edu>
+Description: Efficient algorithms for fitting regularization paths for linear  models penalized by Spike-and-Slab LASSO.
+URL: http://faculty.chicagobooth.edu/workshops/econometrics/PDF%202016/RockovaJMP.pdf
+Depends:

@@ -1,0 +1,6 @@
+## This assumes that the LIB_GSL variable points to working GSL libraries
+
+
+## PKG_CFLAGS=-I/usr/local/include
+
+PKG_LIBS =-L/usr/local/lib/

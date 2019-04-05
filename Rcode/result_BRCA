@@ -1,0 +1,234 @@
+> summary(lm.ham.gene)
+
+Call:
+lm(formula = y1 ~ X1[, ham.vars] - 1)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-3.2848 -0.4044  0.0574  0.4992  1.7946 
+
+Coefficients:
+                      Estimate Std. Error t value Pr(>|t|)    
+X1[, ham.vars]NBR2    0.416220   0.040456  10.288  < 2e-16 ***
+X1[, ham.vars]CHEK2   0.127308   0.043722   2.912  0.00375 ** 
+X1[, ham.vars]ATM    -0.086432   0.034794  -2.484  0.01330 *  
+X1[, ham.vars]TP53   -0.007669   0.034457  -0.223  0.82395    
+X1[, ham.vars]CDH1    0.042958   0.034268   1.254  0.21056    
+X1[, ham.vars]XRCC2   0.271465   0.045455   5.972 4.37e-09 ***
+X1[, ham.vars]RAD51C -0.024528   0.037585  -0.653  0.51430    
+X1[, ham.vars]BRCA2   0.058043   0.039889   1.455  0.14625    
+X1[, ham.vars]PALB2   0.024918   0.035794   0.696  0.48665    
+X1[, ham.vars]NBR1    0.246915   0.044541   5.544 4.74e-08 ***
+X1[, ham.vars]BRIP1   0.184971   0.044765   4.132 4.20e-05 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.7562 on 515 degrees of freedom
+Multiple R-squared:  0.4391,	Adjusted R-squared:  0.4271 
+F-statistic: 36.65 on 11 and 515 DF,  p-value: < 2.2e-16
+
+> summary(lm.BRO)
+
+Call:
+lm(formula = y1 ~ X1[, choice.BRO] - 1)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-1.88409 -0.24043  0.00923  0.28228  1.25795 
+
+Coefficients:
+                          Estimate Std. Error t value Pr(>|t|)    
+X1[, choice.BRO]TRAIP      0.15932    0.02815   5.659 2.58e-08 ***
+X1[, choice.BRO]ABHD8     -0.10296    0.02117  -4.862 1.56e-06 ***
+X1[, choice.BRO]CBLN3      0.10088    0.01963   5.139 3.98e-07 ***
+X1[, choice.BRO]GLI1      -0.19575    0.02237  -8.750  < 2e-16 ***
+X1[, choice.BRO]AASDH     -0.12815    0.02114  -6.063 2.65e-09 ***
+X1[, choice.BRO]C20orf12   0.09095    0.02135   4.261 2.44e-05 ***
+X1[, choice.BRO]NBR2       0.31499    0.02361  13.341  < 2e-16 ***
+X1[, choice.BRO]PSG6       0.12460    0.02038   6.114 1.97e-09 ***
+X1[, choice.BRO]KIAA1033   0.12027    0.02123   5.665 2.49e-08 ***
+X1[, choice.BRO]KHDRBS1    0.10582    0.02025   5.226 2.56e-07 ***
+X1[, choice.BRO]CSPG4     -0.09531    0.02023  -4.712 3.20e-06 ***
+X1[, choice.BRO]ARIH1     -0.14508    0.02281  -6.360 4.60e-10 ***
+X1[, choice.BRO]CCDC56     0.27957    0.02680  10.430  < 2e-16 ***
+X1[, choice.BRO]KIAA1881   0.10072    0.02137   4.714 3.16e-06 ***
+X1[, choice.BRO]THADA     -0.11346    0.02076  -5.466 7.31e-08 ***
+X1[, choice.BRO]SEC22C    -0.15004    0.02353  -6.376 4.17e-10 ***
+X1[, choice.BRO]XRCC2      0.16531    0.02526   6.545 1.49e-10 ***
+X1[, choice.BRO]COL20A1    0.14575    0.02033   7.168 2.78e-12 ***
+X1[, choice.BRO]DDOST      0.13007    0.02189   5.942 5.32e-09 ***
+X1[, choice.BRO]TNFRSF11B -0.08357    0.02009  -4.160 3.74e-05 ***
+X1[, choice.BRO]PANX2     -0.15202    0.02205  -6.894 1.66e-11 ***
+X1[, choice.BRO]ARHGAP19   0.09597    0.02038   4.709 3.24e-06 ***
+X1[, choice.BRO]SPAG5      0.16901    0.02919   5.789 1.26e-08 ***
+X1[, choice.BRO]EXT2       0.10959    0.02132   5.141 3.94e-07 ***
+X1[, choice.BRO]C3orf10   -0.11394    0.02099  -5.427 8.97e-08 ***
+X1[, choice.BRO]CENPM      0.24845    0.02907   8.545  < 2e-16 ***
+X1[, choice.BRO]EIF4EBP1  -0.11727    0.02232  -5.255 2.21e-07 ***
+X1[, choice.BRO]WDR23     -0.09349    0.02172  -4.305 2.01e-05 ***
+X1[, choice.BRO]GGA3      -0.13107    0.02036  -6.438 2.86e-10 ***
+X1[, choice.BRO]NRIP1      0.12242    0.02146   5.704 2.02e-08 ***
+X1[, choice.BRO]PSME3      0.10002    0.02543   3.932 9.61e-05 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.4161 on 495 degrees of freedom
+Multiple R-squared:  0.8367,	Adjusted R-squared:  0.8265 
+F-statistic: 81.83 on 31 and 495 DF,  p-value: < 2.2e-16
+
+> summary(lm.hy)
+
+Call:
+lm(formula = y1 ~ X1[, choice.hy] - 1)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.97655 -0.20547  0.00845  0.19559  0.88745 
+
+Coefficients:
+                        Estimate Std. Error t value Pr(>|t|)    
+X1[, choice.hy]CENPQ     0.13631    0.01866   7.306 1.17e-12 ***
+X1[, choice.hy]CSHL1     0.07586    0.01528   4.966 9.54e-07 ***
+X1[, choice.hy]ABHD8    -0.21431    0.01786 -11.998  < 2e-16 ***
+X1[, choice.hy]MAP9      0.12337    0.01655   7.455 4.28e-13 ***
+X1[, choice.hy]CBLN3     0.09064    0.01541   5.883 7.61e-09 ***
+X1[, choice.hy]PDYN      0.08256    0.01504   5.490 6.55e-08 ***
+X1[, choice.hy]C1orf172 -0.11827    0.01730  -6.835 2.52e-11 ***
+X1[, choice.hy]TNF      -0.09950    0.01700  -5.854 8.97e-09 ***
+X1[, choice.hy]LIMS1     0.19425    0.02173   8.938  < 2e-16 ***
+X1[, choice.hy]KIAA1841 -0.13485    0.01794  -7.516 2.82e-13 ***
+X1[, choice.hy]TSPAN2   -0.12232    0.01726  -7.085 5.03e-12 ***
+X1[, choice.hy]AASDH    -0.15728    0.01762  -8.925  < 2e-16 ***
+X1[, choice.hy]PDE8A    -0.12783    0.01788  -7.150 3.28e-12 ***
+X1[, choice.hy]C20orf12  0.11301    0.01691   6.681 6.64e-11 ***
+X1[, choice.hy]NBR2      0.22579    0.01834  12.314  < 2e-16 ***
+X1[, choice.hy]CLC       0.10189    0.01580   6.449 2.78e-10 ***
+X1[, choice.hy]TMPRSS4   0.10467    0.01579   6.627 9.27e-11 ***
+X1[, choice.hy]OIP5      0.14094    0.02510   5.615 3.35e-08 ***
+X1[, choice.hy]GOLSYN   -0.15371    0.02104  -7.307 1.16e-12 ***
+X1[, choice.hy]C3orf63   0.14377    0.01779   8.082 5.30e-15 ***
+X1[, choice.hy]ERAF      0.08781    0.01534   5.726 1.83e-08 ***
+X1[, choice.hy]UBL7     -0.12587    0.01844  -6.827 2.66e-11 ***
+X1[, choice.hy]CCDC56    0.26855    0.02499  10.748  < 2e-16 ***
+X1[, choice.hy]SAA1      0.09790    0.01786   5.481 6.87e-08 ***
+X1[, choice.hy]ASF1B     0.32007    0.02551  12.546  < 2e-16 ***
+X1[, choice.hy]IL23A     0.12505    0.01835   6.817 2.83e-11 ***
+X1[, choice.hy]ZMYM5    -0.08869    0.01524  -5.820 1.09e-08 ***
+X1[, choice.hy]C9orf123 -0.08131    0.01730  -4.701 3.39e-06 ***
+X1[, choice.hy]CCDC4    -0.13505    0.01668  -8.095 4.82e-15 ***
+X1[, choice.hy]AP3M1     0.16145    0.01711   9.438  < 2e-16 ***
+X1[, choice.hy]CLCNKA   -0.08023    0.01638  -4.899 1.32e-06 ***
+X1[, choice.hy]GATA6     0.07105    0.01630   4.359 1.60e-05 ***
+X1[, choice.hy]GOSR2     0.09087    0.01729   5.256 2.22e-07 ***
+X1[, choice.hy]RG9MTD2   0.09117    0.02178   4.186 3.38e-05 ***
+X1[, choice.hy]PIGZ      0.12699    0.01651   7.692 8.40e-14 ***
+X1[, choice.hy]TCP11    -0.08090    0.01481  -5.464 7.53e-08 ***
+X1[, choice.hy]SENP2    -0.12322    0.01607  -7.668 9.93e-14 ***
+X1[, choice.hy]IRF8     -0.22588    0.01937 -11.662  < 2e-16 ***
+X1[, choice.hy]COG1     -0.10018    0.01877  -5.337 1.46e-07 ***
+X1[, choice.hy]ZNF695    0.10231    0.02274   4.499 8.61e-06 ***
+X1[, choice.hy]C3orf10  -0.09435    0.01575  -5.990 4.13e-09 ***
+X1[, choice.hy]GRHPR     0.09504    0.01793   5.302 1.76e-07 ***
+X1[, choice.hy]FTSJ3    -0.10347    0.01895  -5.462 7.61e-08 ***
+X1[, choice.hy]KIAA0892  0.07630    0.01804   4.230 2.81e-05 ***
+X1[, choice.hy]MECR      0.11728    0.01772   6.618 9.81e-11 ***
+X1[, choice.hy]SYNE2     0.13980    0.01933   7.233 1.89e-12 ***
+X1[, choice.hy]FABP7    -0.23726    0.02053 -11.557  < 2e-16 ***
+X1[, choice.hy]TAF2     -0.08822    0.01957  -4.508 8.25e-06 ***
+X1[, choice.hy]JARID2    0.09230    0.01604   5.754 1.56e-08 ***
+X1[, choice.hy]PSME3     0.21647    0.02208   9.806  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.3161 on 476 degrees of freedom
+Multiple R-squared:  0.9094,	Adjusted R-squared:  0.8999 
+F-statistic: 95.59 on 50 and 476 DF,  p-value: < 2.2e-16
+
+> summary(lm.SCAD)
+
+Call:
+lm(formula = y1 ~ X1[, choice.SCAD] - 1)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-3.07203 -0.34059  0.04575  0.41929  1.63255 
+
+Coefficients:
+                          Estimate Std. Error t value Pr(>|t|)    
+X1[, choice.SCAD]DTL       0.37858    0.03803   9.955  < 2e-16 ***
+X1[, choice.SCAD]NBR2      0.38704    0.03211  12.053  < 2e-16 ***
+X1[, choice.SCAD]C17orf53  0.17567    0.04002   4.390 1.37e-05 ***
+X1[, choice.SCAD]VPS25     0.22844    0.03408   6.702 5.34e-11 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.6738 on 522 degrees of freedom
+Multiple R-squared:  0.5486,	Adjusted R-squared:  0.5451 
+F-statistic: 158.6 on 4 and 522 DF,  p-value: < 2.2e-16
+
+> summary(lm.MCP)
+
+Call:
+lm(formula = y1 ~ X1[, choice.MCP] - 1)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-3.07203 -0.34059  0.04575  0.41929  1.63255 
+
+Coefficients:
+                         Estimate Std. Error t value Pr(>|t|)    
+X1[, choice.MCP]DTL       0.37858    0.03803   9.955  < 2e-16 ***
+X1[, choice.MCP]NBR2      0.38704    0.03211  12.053  < 2e-16 ***
+X1[, choice.MCP]C17orf53  0.17567    0.04002   4.390 1.37e-05 ***
+X1[, choice.MCP]VPS25     0.22844    0.03408   6.702 5.34e-11 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.6738 on 522 degrees of freedom
+Multiple R-squared:  0.5486,	Adjusted R-squared:  0.5451 
+F-statistic: 158.6 on 4 and 522 DF,  p-value: < 2.2e-16
+
+> summary(lm.ENET)
+
+Call:
+lm(formula = y1 ~ X1[, choice.ENET] - 1)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-3.08227 -0.33987  0.04799  0.41924  1.64051 
+
+Coefficients:
+                          Estimate Std. Error t value Pr(>|t|)    
+X1[, choice.ENET]DTL       0.37905    0.03807   9.958  < 2e-16 ***
+X1[, choice.ENET]NBR2      0.38923    0.03238  12.022  < 2e-16 ***
+X1[, choice.ENET]C17orf53  0.18709    0.04509   4.150 3.89e-05 ***
+X1[, choice.ENET]TUBG1    -0.02584    0.04692  -0.551    0.582    
+X1[, choice.ENET]VPS25     0.24056    0.04059   5.927 5.63e-09 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.6743 on 521 degrees of freedom
+Multiple R-squared:  0.5488,	Adjusted R-squared:  0.5445 
+F-statistic: 126.8 on 5 and 521 DF,  p-value: < 2.2e-16
+
+> summary(lm.LASSO)
+
+Call:
+lm(formula = y1 ~ X1[, choice.LASSO] - 1)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-3.07203 -0.34059  0.04575  0.41929  1.63255 
+
+Coefficients:
+                           Estimate Std. Error t value Pr(>|t|)    
+X1[, choice.LASSO]DTL       0.37858    0.03803   9.955  < 2e-16 ***
+X1[, choice.LASSO]NBR2      0.38704    0.03211  12.053  < 2e-16 ***
+X1[, choice.LASSO]C17orf53  0.17567    0.04002   4.390 1.37e-05 ***
+X1[, choice.LASSO]VPS25     0.22844    0.03408   6.702 5.34e-11 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.6738 on 522 degrees of freedom
+Multiple R-squared:  0.5486,	Adjusted R-squared:  0.5451 
+F-statistic: 158.6 on 4 and 522 DF,  p-value: < 2.2e-16

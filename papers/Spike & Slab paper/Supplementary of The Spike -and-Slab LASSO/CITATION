@@ -1,0 +1,12 @@
+citHeader("To cite SSL in publications use:")
+
+citEntry(
+  entry="Article",
+  author = personList(as.person("Veronika Rockova")),
+  title = "The Spike-and-Slab LASSO",
+  journal = "Annals of Applied Statistics",
+  year = "2015",
+  volume = " ",
+  pages = "1--30",
+  number = "1",
+  textVersion = "Rockova, V. and George, E. (2011) The Spike-and-Slab LASSO. Journal of the American Statistical Association., (in revision).")

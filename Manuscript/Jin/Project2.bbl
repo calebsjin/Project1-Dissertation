@@ -1,0 +1,93 @@
+\begin{thebibliography}{}
+
+\bibitem[\protect\citeauthoryear{Bertsimas, King, Mazumder, et~al.}{Bertsimas
+  et~al.}{2016}]{bertsimas2016best}
+Bertsimas, D., A.~King, R.~Mazumder, et~al. (2016).
+\newblock Best subset selection via a modern optimization lens.
+\newblock {\em The annals of statistics\/}~{\em 44\/}(2), 813--852.
+
+\bibitem[\protect\citeauthoryear{Chen and Chen}{Chen and
+  Chen}{2008}]{chen2008extended}
+Chen, J. and Z.~Chen (2008).
+\newblock Extended bayesian information criteria for model selection with large
+  model spaces.
+\newblock {\em Biometrika\/}~{\em 95\/}(3), 759--771.
+
+\bibitem[\protect\citeauthoryear{Fan and Li}{Fan and
+  Li}{2001}]{fan2001variable}
+Fan, J. and R.~Li (2001).
+\newblock Variable selection via nonconcave penalized likelihood and its oracle
+  properties.
+\newblock {\em Journal of the American statistical Association\/}~{\em
+  96\/}(456), 1348--1360.
+
+\bibitem[\protect\citeauthoryear{Findlay, Daza, Martin, Zhang, Leith,
+  Gasperini, Janizek, Huang, Starita, and Shendure}{Findlay
+  et~al.}{2018}]{findlay2018accurate}
+Findlay, G.~M., R.~M. Daza, B.~Martin, M.~D. Zhang, A.~P. Leith, M.~Gasperini,
+  J.~D. Janizek, X.~Huang, L.~M. Starita, and J.~Shendure (2018).
+\newblock Accurate classification of brca1 variants with saturation genome
+  editing.
+\newblock {\em Nature\/}~{\em 562\/}(7726), 217.
+
+\bibitem[\protect\citeauthoryear{Hans, Dobra, and West}{Hans
+  et~al.}{2007}]{hans2007shotgun}
+Hans, C., A.~Dobra, and M.~West (2007).
+\newblock Shotgun stochastic search for ``large p'' regression.
+\newblock {\em Journal of the American Statistical Association\/}~{\em
+  102\/}(478), 507--516.
+
+\bibitem[\protect\citeauthoryear{Hocking and Leslie}{Hocking and
+  Leslie}{1967}]{hocking1967selection}
+Hocking, R. and R.~Leslie (1967).
+\newblock Selection of the best subset in regression analysis.
+\newblock {\em Technometrics\/}~{\em 9\/}(4), 531--540.
+
+\bibitem[\protect\citeauthoryear{Hoerl and Kennard}{Hoerl and
+  Kennard}{1970}]{hoerl1970ridge}
+Hoerl, A.~E. and R.~W. Kennard (1970).
+\newblock Ridge regression: Biased estimation for nonorthogonal problems.
+\newblock {\em Technometrics\/}~{\em 12\/}(1), 55--67.
+
+\bibitem[\protect\citeauthoryear{Kass and Raftery}{Kass and
+  Raftery}{1995}]{kass1995}
+Kass, R.~E. and A.~E. Raftery (1995).
+\newblock Bayes factors.
+\newblock {\em Journal of the American Statistical Association\/}~{\em
+  90\/}(430), 773--795.
+
+\bibitem[\protect\citeauthoryear{Liang, Liu, and Carroll}{Liang
+  et~al.}{2007}]{liang2007stochastic}
+Liang, F., C.~Liu, and R.~J. Carroll (2007).
+\newblock Stochastic approximation in monte carlo computation.
+\newblock {\em Journal of the American Statistical Association\/}~{\em
+  102\/}(477), 305--320.
+
+\bibitem[\protect\citeauthoryear{Liang, Song, and Yu}{Liang
+  et~al.}{2013}]{liang2013bayesian}
+Liang, F., Q.~Song, and K.~Yu (2013).
+\newblock Bayesian subset modeling for high-dimensional generalized linear
+  models.
+\newblock {\em Journal of the American Statistical Association\/}~{\em
+  108\/}(502), 589--606.
+
+\bibitem[\protect\citeauthoryear{Tibshirani}{Tibshirani}{1996}]{tibshirani1996regression}
+Tibshirani, R. (1996).
+\newblock Regression shrinkage and selection via the lasso.
+\newblock {\em Journal of the Royal Statistical Society. Series B
+  (Methodological)\/}, 267--288.
+
+\bibitem[\protect\citeauthoryear{Zhang et~al.}{Zhang
+  et~al.}{2010}]{zhang2010nearly}
+Zhang, C.-H. et~al. (2010).
+\newblock Nearly unbiased variable selection under minimax concave penalty.
+\newblock {\em The Annals of statistics\/}~{\em 38\/}(2), 894--942.
+
+\bibitem[\protect\citeauthoryear{Zou and Hastie}{Zou and
+  Hastie}{2005}]{zou2005regularization}
+Zou, H. and T.~Hastie (2005).
+\newblock Regularization and variable selection via the elastic net.
+\newblock {\em Journal of the Royal Statistical Society: Series B (Statistical
+  Methodology)\/}~{\em 67\/}(2), 301--320.
+
+\end{thebibliography}
