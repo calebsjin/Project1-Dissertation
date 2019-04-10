@@ -1,15 +1,15 @@
 # Fdb version 3
-["bibtex Project2"] 1554475121 "Project2.aux" "Project2.bbl" "Project2" 1554475176
+["bibtex Project2"] 1554833947 "Project2.aux" "Project2.bbl" "Project2" 1554848315
   "/usr/share/texlive/texmf-dist/bibtex/bst/chicago/chicago.bst" 1480098434 37416 2ae04276c51f11eda70770f4081293b7 ""
-  "Project2.aux" 1554475121 6224 e7ce7b364495cab561a33d32d59ced61 ""
+  "Project2.aux" 1554848281 6224 6773ded52650977bc414c8cb6e42c4c1 ""
   "Project2.bcf" 0 -1 0 ""
   "ref.bib" 1553458221 4931 4a7c24a0ce5737c524fe16582b587d13 ""
   (generated)
   "Project2.bbl"
   "Project2.blg"
-["pdflatex"] 1554475121 "Project2.tex" "/home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.pdf" "Project2" 1554475176
+["pdflatex"] 1554848280 "Project2.tex" "/home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.pdf" "Project2" 1554848315
   "/etc/texmf/web2c/texmf.cnf" 1531395337 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.aux" 1554475121 6224 e7ce7b364495cab561a33d32d59ced61 ""
+  "/home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.aux" 1554848281 6224 6773ded52650977bc414c8cb6e42c4c1 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1511824771 3332 103109f5612ad95229751940c61aada0 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy5.tfm" 1480098698 1120 1e8878807317373affa7f7bba4cf2f6a ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy6.tfm" 1480098698 1124 14ccf5552bc7f77ca02a8a402bea8bfb ""
@@ -127,14 +127,14 @@
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1542743589 834553 e1b84bc5caf0b36b7428ff9b04aba5b6 ""
   "Heatmap.pdf" 1553457783 9686 1f2dedd184c99aabebf489364fba9561 ""
   "Log_marginal.pdf" 1553457820 7631 23dd64108ae714075f026c462ccd6e08 ""
-  "Project2.aux" 1554475121 6224 e7ce7b364495cab561a33d32d59ced61 ""
-  "Project2.bbl" 1554475121 3909 336c6fd96de29eaa39a595ebea79f0ae "bibtex Project2"
-  "Project2.out" 1554475121 569 c619bea2a92caa78fe78812ee4eb8ac7 ""
-  "Project2.tex" 1553459796 34410 bed908b692290347f11a0b2206e599ab ""
+  "Project2.aux" 1554848281 6224 6773ded52650977bc414c8cb6e42c4c1 ""
+  "Project2.bbl" 1554833947 3909 336c6fd96de29eaa39a595ebea79f0ae "bibtex Project2"
+  "Project2.out" 1554848281 569 c619bea2a92caa78fe78812ee4eb8ac7 ""
+  "Project2.tex" 1554848280 35209 584a4928be55a5b65abcf594e1981c8a ""
   (generated)
-  "Project2.out"
-  "/home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.pdf"
   "Project2.aux"
-  "Project2.log"
-  "Project2.pdf"
   "/home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.log"
+  "Project2.pdf"
+  "/home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.pdf"
+  "Project2.out"
+  "Project2.log"
