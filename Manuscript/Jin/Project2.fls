@@ -178,13 +178,9 @@ INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmbsy10.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy8.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy6.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmti12.tfm
-INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmtt12.tfm
 INPUT /home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Heatmap.pdf
 INPUT /home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Heatmap.pdf
 INPUT /home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Heatmap.pdf
-INPUT /home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Log_marginal.pdf
-INPUT /home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Log_marginal.pdf
-INPUT /home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Log_marginal.pdf
 INPUT /home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.bbl
 INPUT /home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.bbl
 INPUT /home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.aux
@@ -210,5 +206,4 @@ INPUT /usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb
 INPUT /usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb
 INPUT /usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb
 INPUT /usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb
-INPUT /usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb
 INPUT /usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb

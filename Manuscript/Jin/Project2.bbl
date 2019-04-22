@@ -71,6 +71,12 @@ Liang, F., Q.~Song, and K.~Yu (2013).
 \newblock {\em Journal of the American Statistical Association\/}~{\em
   108\/}(502), 589--606.
 
+\bibitem[\protect\citeauthoryear{Ramos}{Ramos}{2019}]{Ramos2019}
+Ramos, M. (2019).
+\newblock {\em curatedTCGAData: Curated Data From The Cancer Genome Atlas
+  (TCGA) as MultiAssayExperiment Objects}.
+\newblock R package version 1.4.3.
+
 \bibitem[\protect\citeauthoryear{Tibshirani}{Tibshirani}{1996}]{tibshirani1996regression}
 Tibshirani, R. (1996).
 \newblock Regression shrinkage and selection via the lasso.

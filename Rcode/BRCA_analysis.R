@@ -253,15 +253,14 @@ for (k in 1:k0) { #For loop for k<=k0
   print(sum(name.genes.X1[G1.hy[[k]]]%in%ham.genes))
 } # for (k in 1:k0) ends here
 choice.hy <- G1.hy[[which.max(marginal.hy)]]
-choice.hy.name <- name.genes.X1[choice.hy]
+gene.hy <- name.genes.X1[choice.hy]
 lm.hy <- lm(y1~X1[,choice.hy]-1)
 hat.beta.hy <- rep(0,p)
 hat.beta.hy[choice.hy] <- coef(lm.hy)
 BIC.hy <- BIC(lm.hy) 
 EBIC.hy <- BIC.hy + 2*lchoose(p,length(choice.hy))
-print(choice.hy.name)
-choice.hy.name%in%ham.genes
-
+print(gene.hy)
+gene.hy%in%ham.genes
 
 
 #########################
@@ -290,7 +289,7 @@ hat.beta.LASSO <- rep0
 hat.beta.LASSO[choice.LASSO] <- coef(lm.LASSO)
 BIC.LASSO <- BIC(lm.LASSO)
 EBIC.LASSO <- BIC.LASSO + 2*lchoose(p,length(choice.LASSO))
-name.genes.X1[choice.LASSO]
+gene.LASSO <- name.genes.X1[choice.LASSO]
 ###################################
 #2. SCAD ##########################
 ###################################
@@ -313,7 +312,8 @@ hat.beta.SCAD<- rep0
 hat.beta.SCAD[choice.SCAD] <- coef(lm.SCAD)
 BIC.SCAD <- BIC(lm(y1~X1[,choice.SCAD]-1))
 EBIC.SCAD <- BIC.SCAD + 2*lchoose(p,length(choice.SCAD)) 
-name.genes.X1[choice.SCAD]
+gene.SCAD <- name.genes.X1[choice.SCAD]
+
 ####################################
 #3. MCP ############################
 ####################################
@@ -335,7 +335,7 @@ hat.beta.MCP <- rep0
 hat.beta.MCP[choice.MCP] <- coef(lm.MCP)
 BIC.MCP <- BIC(lm(y1~X1[,choice.MCP]-1))
 EBIC.MCP <- BIC.MCP + 2*lchoose(p,length(choice.MCP)) 
-name.genes.X1[choice.MCP]
+gene.MCP <- name.genes.X1[choice.MCP]
 ###################################
 #4. ENET #########################
 ###################################
@@ -358,7 +358,7 @@ hat.beta.ENET <- rep0
 hat.beta.ENET[choice.ENET] <- coef(lm.ENET)
 BIC.ENET <- BIC(lm(y1~X1[,choice.ENET]-1))
 EBIC.ENET <- BIC.ENET + 2*lchoose(p,length(choice.ENET)) 
-name.genes.X1[choice.ENET]
+gene.ENET <- name.genes.X1[choice.ENET]
 
 EBIC.ALL <- cbind(EBIC.hy,EBIC.SCAD,EBIC.MCP,EBIC.ENET,EBIC.LASSO)
 BIC.ALL <- cbind(BIC.hy,BIC.SCAD,BIC.MCP,BIC.ENET,BIC.LASSO)
@@ -442,33 +442,50 @@ gamma.ENET[choice.ENET]=1
 gamma.LASSO <- rep0
 gamma.LASSO[choice.LASSO]=1
 
+sum.hy <- summary(lm.hy)
+sum.SCAD <- summary(lm.SCAD)
+sum.MCP <- summary(lm.MCP)
+sum.ENET <- summary(lm.ENET)
+sum.LASSO <- summary(lm.LASSO)
+
+p.hy <- sum.hy$coefficients[,4]
+p.SCAD <- sum.SCAD$coefficients[,4]
+p.MCP <- sum.MCP$coefficients[,4]
+p.ENET <- sum.ENET$coefficients[,4]
+p.LASSO <- sum.LASSO$coefficients[,4]
+gene.com <- name.genes.X1[union.nonzero]
 
 union.gamma <- colSums(rbind(gamma.hy,gamma.SCAD,gamma.MCP,gamma.ENET,gamma.LASSO))
 union.nonzero <- which(union.gamma!=0)
+
 all.BETA = rbind(hat.beta.hy,hat.beta.SCAD,hat.beta.MCP,hat.beta.ENET,hat.beta.LASSO)
 all.beta <- all.BETA[,union.nonzero]
-tag.metohd <- c('Global','SCAD','MCP','ENET','LASSO')
+tag.metohd <- c('Proposed','SCAD','MCP','ENET','LASSO')
 Method <- factor(tag.metohd,levels = tag.metohd[5:1])
 data.beta<- data.frame(Method,all.beta)
-names(data.beta) <- c('Method',name.genes.X1[union.nonzero])
+names(data.beta) <- c('Method',gene.com)
 data.heat <- melt(data.beta,id = 'Method',value.name = 'Coefficient')
-p.sig = matrix(NA,5,length(union.nonzero))
-p.sig[4,6]='X'
-
-heat.plot <- ggplot(data.heat, aes(x = variable, y = Method, fill = Coefficient)) + 
+p.value = matrix(NA,ncol = 5,nrow = length(union.nonzero))
+colnames(p.value) <- tag.metohd
+rownames(p.value) <- gene.com
+p.value[,1][gene.com%in%gene.hy] <- p.hy
+p.value[,2][gene.com%in%gene.SCAD] <- p.SCAD
+p.value[,3][gene.com%in%gene.MCP] <- p.MCP
+p.value[,4][gene.com%in%gene.ENET] <- p.ENET
+p.value[,5][gene.com%in%gene.LASSO] <- p.LASSO
+p.value = round(p.value,3)
+heat.plot <- ggplot(data.heat, aes(x = Method, y = variable, fill = Coefficient)) + 
   geom_tile() +
   scale_fill_gradientn(colours = c("cyan", "white", "red"), 
                        values = scales::rescale(c(min(data.heat$Coefficient), 0, 
                                                   max(data.heat$Coefficient)))) + 
-  xlab('Genes') + ylab('Methods') + 
-  theme(axis.text.x = element_text(face = 'bold',size=5, angle=90)) + 
-  theme(axis.text.y = element_text(face = 'bold',size=10)) + 
-  theme(axis.title.x.bottom = element_text(face = 'bold',size=15)) + 
-  theme(axis.title.y.left = element_text(face = 'bold',size=15)) + 
-  geom_hline(yintercept = seq(0.5,7.5,1),colour='grey80') +
-  geom_text(aes(label=as.vector(p.sig)), fontface = 'bold', size = 3)
+  ylab('Genes') + xlab('Methods') + 
+  theme(axis.title.x.bottom = element_text(face = 'bold',size=10)) + 
+  theme(axis.title.y.left = element_text(face = 'bold',size=10)) + 
+  geom_text(aes(label=as.vector(t(p.value))), fontface = 'bold', size = 3) +
+  theme(panel.background = element_rect(fill='white'))
 heat.plot
-ggsave('Heatmap.pdf', plot = heat.plot,dpi = 300, height = 6, width = 10)
+ggsave('Heatmap.pdf', plot = heat.plot,dpi = 100, height = 6, width = 6)
 
 
 marginal.data <- data.frame(k = 1:k0, Global = marginal.hy)
@@ -488,8 +505,8 @@ xtable(lm.MCP)
 xtable(lm.ENET)
 xtable(lm.LASSO)
 
-summary(lm.hy)
-summary(lm.SCAD)
-summary(lm.MCP)
-summary(lm.ENET)
-summary(lm.LASSO)
+sum.hy 
+sum.SCAD 
+sum.MCP 
+sum.ENET 
+sum.LASSO 
