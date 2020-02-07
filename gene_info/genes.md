@@ -3,9 +3,9 @@ title: Information about genes.
 author: Shiqiang Jin
 date: 2019-4-20
 ---
-### 0. Heat map 
+### 0. Heat map
 
-![Heapmap](/home/jin/Dropbox/Goh/Project 2/gene_info/Heatmap.jpg)
+![Heapmap](/home/jin/Dropbox/Goh/Project_1/gene_info/Heatmap.jpg)
 
 ### 1. Genes selected by proposed method
 

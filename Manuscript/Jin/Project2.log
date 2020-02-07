@@ -1,9 +1,9 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2018.11.20)  20 APR 2019 21:07
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2018.11.20)  23 APR 2019 15:48
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
 **Project2.tex
-(/home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.tex
+(/home/jin/Dropbox/Goh/Project_1/Manuscript/Jin/Project2.tex
 LaTeX2e <2017-04-15>
 Babel <3.18> and hyphenation patterns for 9 language(s) loaded.
 (/usr/share/texlive/texmf-dist/tex/latex/base/article.cls
@@ -341,7 +341,7 @@ Package hyperref Info: Option `bookmarksnumbered' set `true' on input line 18.
 \c@example=\count123
 \c@assumption=\count124
 
-(/home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.aux)
+(/home/jin/Dropbox/Goh/Project_1/Manuscript/Jin/Project2.aux)
 \openout1 = `Project2.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 109.
@@ -441,8 +441,8 @@ LaTeX Info: Redefining \ref on input line 109.
 LaTeX Info: Redefining \pageref on input line 109.
 LaTeX Info: Redefining \nameref on input line 109.
 
-(/home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.out)
-(/home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.out)
+(/home/jin/Dropbox/Goh/Project_1/Manuscript/Jin/Project2.out)
+(/home/jin/Dropbox/Goh/Project_1/Manuscript/Jin/Project2.out)
 \@outlinefile=\write3
 \openout3 = `Project2.out'.
 
@@ -488,97 +488,97 @@ Underfull \hbox (badness 10000) in paragraph at lines 221--221
  []
 
 [7] [8] [9]
-Overfull \hbox (34.89534pt too wide) in paragraph at lines 287--324
+Overfull \hbox (34.89534pt too wide) in paragraph at lines 288--325
  [][] 
  []
 
 [10] [11]
 
 LaTeX Warning: Reference `Fig:logmarginal' on page 12 undefined on input line 3
-38.
+39.
 
-<Heatmap.pdf, id=224, 433.62pt x 433.62pt>
+<Heatmap.pdf, id=225, 433.62pt x 433.62pt>
 File: Heatmap.pdf Graphic file (type pdf)
 <use Heatmap.pdf>
-Package pdftex.def Info: Heatmap.pdf  used on input line 357.
+Package pdftex.def Info: Heatmap.pdf  used on input line 358.
 (pdftex.def)             Requested size: 433.61894pt x 433.61894pt.
-[12] [13 </home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Heatmap.pdf>] [14]
+[12] [13 </home/jin/Dropbox/Goh/Project_1/Manuscript/Jin/Heatmap.pdf>] [14]
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\hbox' on input line 379.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\mathsurround' on input line 379.
+(hyperref)                removing `\hbox' on input line 380.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\z@' on input line 379.
+(hyperref)                removing `\mathsurround' on input line 380.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\unskip' on input line 379.
+(hyperref)                removing `\z@' on input line 380.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\@@italiccorr' on input line 379.
+(hyperref)                removing `\unskip' on input line 380.
 
 
-Overfull \hbox (71.10587pt too wide) in alignment at lines 380--388
+Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
+(hyperref)                removing `\@@italiccorr' on input line 380.
+
+
+Overfull \hbox (71.10587pt too wide) in alignment at lines 381--389
  [][][] []
  []
 
 
-LaTeX Warning: Reference `lm:1' on page 15 undefined on input line 389.
+LaTeX Warning: Reference `lm:1' on page 15 undefined on input line 390.
 
 
-LaTeX Warning: Reference `lm:4.1' on page 15 undefined on input line 389.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\hbox' on input line 390.
+LaTeX Warning: Reference `lm:4.1' on page 15 undefined on input line 390.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\mathsurround' on input line 390.
+(hyperref)                removing `\hbox' on input line 391.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\z@' on input line 390.
+(hyperref)                removing `\mathsurround' on input line 391.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\unskip' on input line 390.
+(hyperref)                removing `\z@' on input line 391.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\@@italiccorr' on input line 390.
+(hyperref)                removing `\unskip' on input line 391.
 
 
-Overfull \hbox (29.14139pt too wide) in alignment at lines 393--400
+Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
+(hyperref)                removing `\@@italiccorr' on input line 391.
+
+
+Overfull \hbox (29.14139pt too wide) in alignment at lines 394--401
  [][][] []
  []
 
-[15] [16] (/home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.bbl [17])
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 433.
+[15] [16] (/home/jin/Dropbox/Goh/Project_1/Manuscript/Jin/Project2.bbl [17])
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 434.
 
 [18]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 433.
- (/home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 433.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 433.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 434.
+ (/home/jin/Dropbox/Goh/Project_1/Manuscript/Jin/Project2.aux)
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 434.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 434.
 Package rerunfilecheck Info: File `Project2.out' has not changed.
 (rerunfilecheck)             Checksum: 6FAC5F52AE3BEB2177C4888B3EFCEEAA;783.
 
 
 LaTeX Warning: There were undefined references.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 433.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 434.
  ) 
 Here is how much of TeX's memory you used:
  8358 strings out of 494821
- 122991 string characters out of 6177890
- 221887 words of memory out of 5000000
+ 122989 string characters out of 6177890
+ 222887 words of memory out of 5000000
  11507 multiletter control sequences out of 15000+600000
  20501 words of font info for 75 fonts, out of 8000000 for 9000
  59 hyphenation exceptions out of 8191
@@ -603,11 +603,11 @@ e/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texlive/texmf
 -dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texlive/texmf-dist/f
 onts/type1/public/amsfonts/cm/cmti12.pfb></usr/share/texlive/texmf-dist/fonts/t
 ype1/public/amsfonts/symbols/msbm10.pfb>
-Output written on "/home/jin/Dropbox/Goh/Project 2/Manuscript/Jin/Project2.pdf"
- (18 pages, 282289 bytes).
+Output written on /home/jin/Dropbox/Goh/Project_1/Manuscript/Jin/Project2.pdf (
+18 pages, 282500 bytes).
 PDF statistics:
- 358 PDF objects out of 1000 (max. 8388607)
- 301 compressed objects within 4 object streams
+ 359 PDF objects out of 1000 (max. 8388607)
+ 302 compressed objects within 4 object streams
  66 named destinations out of 1000 (max. 500000)
  110 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -1,0 +1,1872 @@
+> library(MASS)
+> library(invgamma)
+> library(mvtnorm)
+> library(xtable)
+> library(ggplot2)
+> library(reshape2)
+> library(glmnet)
+Loading required package: Matrix
+Loading required package: foreach
+Loaded glmnet 2.0-16
+
+> library(ncvreg)
+> rm(list=ls())
+> ###################
+> # Data processing #
+> ###################
+> # load('~/Dropbox/Goh/BRCA.RData')
+> load('~/BRCA.RData')
+> ## data processing
+> BRCA.stu <- scale(BRCA,center = TRUE, scale = TRUE)
+> name.genes <- colnames(BRCA)
+> ham.genes <- c('BRCA2','NBR1','NBR2','XRCC2',
++                'ATM','CHEK2','BRIP1','PALB2','RAD51C',
++                'CDH1','TP53','LDLRAD1', 'SLC19A1', 
++                'FGFBP3', 'CASP5', 'MMAB', 'SLC16A6',
++                'NBS1','RAD50','RAD51D','BARD1',
++                'CASP8', 'CTLA4', 'CYP19A1', 'FGFR2',
++                'H19', 'LSP1', 'MAP3K1', 'MRE11A',
++                'NBN', 'RAD51','TERT','MSH6','PMS2',
++                'SEC23B','NF1')
+> BRCA1 <- which(name.genes=='BRCA1')
+> y1 <- BRCA.stu[,BRCA1]
+> X0 <- BRCA.stu[,-BRCA1]
+> name.genes <- name.genes[-BRCA1] # update symbols of genes. 
+> mcsize = 1000
+> p = 17326 # 5000
+> abs.cor <- abs(cor(y1,X0))
+> g=sort(abs.cor,decreasing = TRUE)[p]
+> X1 <- X0[,which(abs.cor>=g)]
+> name.genes.X1 <- colnames(X1)
+> sum(ham.genes%in%name.genes.X1)
+[1] 33
+> n = length(y1)
+> k0 <- ceiling(n^(2/3))
+> rep0 <- rep(0,p)
+> seq.p <- c(1:p)
+> I_n <- diag(1,n)
+> a.sigma = b.sigma = 1
+> G1.FNVS <- list()
+> G1.hy <- list()
+> tau = (log(p))^2
+> beta.ini= as.numeric(cor(y1,X1))
+> marginal.FNVS <- rep(NA,k0)
+> marginal.hy <- rep(NA,k0)
+> G1.hy <- list()
+> tXX <-  crossprod(X1)
+> d.tXX<-diag(tXX)
+> sum.y2<-sum(y1^2)
+> tXy<-t(X1)%*%y1
+> for (k in 1:k0) { #For loop for k<=k0
++   #k<-1
++   print(k)
++   I_k <- diag(1,k)
++   I_k1 <- diag(1,k+1)
++   log.choose <- lchoose(p,k)
++   gamma.0 = as.numeric(abs(beta.ini)>=(sort(abs(beta.ini),decreasing = TRUE)[k]))
++   G.1 <- which(gamma.0==1)
++   G.0 <- which(gamma.0==0)
++   marginal.hy[k]=1
++   marginal.FNVS[k]=0
++   ########################################
++   #BEGIN: Hybrid Search    ###############
++   ########################################
++   
++   while (marginal.FNVS[k]<marginal.hy[k]) {
++     
++     ########################################
++     #1. Deterministic Search ###############
++     ########################################
++     #for(Goh in 1:1000){
++     #tau.new<-tau
++     while(1>0){
++       X.r <- X1[,G.1]
++       X_r <- X1[,G.0]
++       tX.rX_r<-t(X.r)%*%X_r
++       
++       #inv.XX.r <- solve(crossprod(X.r)+1/tau*I_k)
++       #diag.XHX<-d.tXX[G.0]- diag(t(tX.rX_r)%*%inv.XX.r%*%tX.rX_r)
++       
++       tXX.r.tau<-(crossprod(X.r)+1/tau*I_k)
++       Decomp<-eigen(tXX.r.tau,symmetric=TRUE)
++       if(k==1){half.tXX.r.tau<-Decomp$vectors*(1/sqrt(Decomp$values))}else{
++         half.tXX.r.tau<-Decomp$vectors%*%diag(1/sqrt(Decomp$values))}
++       half.XHX<-crossprod(half.tXX.r.tau,tX.rX_r)
++       diag.XHX<-d.tXX[G.0]-colSums(half.XHX^2)
++       
++       #tXX.Xy<-(inv.XX.r%*%tXy[G.1])
++       #tyHy<-sum.y2-t(tXy[G.1])%*%tXX.Xy
++       half.Hy<-crossprod(half.tXX.r.tau,tXy[G.1])
++       tyHy<-sum.y2-sum(half.Hy^2)
++       
++       #tXHy<-tXy[G.0]-t(tX.rX_r)%*%tXX.Xy
++       tXHy<-as.numeric(tXy[G.0]-crossprod(half.XHX,half.Hy))
++       
++       XI.log <- -0.5*(a.sigma+n)*log(tyHy-(tXHy)^2/(1/tau+diag.XHX) + b.sigma) - 0.5 * log(1/tau + diag.XHX)
++       XI <- exp(XI.log)
++       i.star <- G.0[which.max(XI.log)]
++       G.1.star <- sort(union(G.1,i.star))
++       X.r.star <- X1[,G.1.star]
++       # H.r.star <- I_n-X.r.star%*%solve(crossprod(X.r.star)+1/tau*I_k1)%*%t(X.r.star) # Shiqiang
++       # diag.XHX.star <- diag(t(X.r.star)%*%H.r.star%*%X.r.star)  # Shiqiang
++       #ETA.log <- -0.5*(a.sigma+n)*log(rep(t(y1)%*%H.r.star%*%y1,k+1) + (t(X.r.star)%*%H.r.star%*%y1)^2/(1/tau-diag.XHX.star) + b.sigma)-0.5 * log(1/tau - diag.XHX.star)  # Shiqiang
++       
++       tXX.r.tau.star<-(crossprod(X.r.star)+1/tau*I_k1)
++       Decomp.star<-eigen(tXX.r.tau.star,symmetric=TRUE)
++       half.tXX.r.tau.star<-Decomp.star$vectors%*%diag(1/sqrt(Decomp.star$values))
++       half.XHX.star<-crossprod(half.tXX.r.tau.star,crossprod(X.r.star))
++       diag.XHX.star<-d.tXX[G.1.star]-colSums(half.XHX.star^2)
++       half.Hy.star<-crossprod(half.tXX.r.tau.star,tXy[G.1.star])
++       tyHy.star<-sum.y2-sum(half.Hy.star^2)
++       tXHy.star<-as.numeric(tXy[G.1.star]-crossprod(half.XHX.star,half.Hy.star))
++       ETA.log <- -0.5*(a.sigma+n)*log(tyHy.star + (tXHy.star)^2/(1/tau-diag.XHX.star) + b.sigma)-
++         0.5 * log(1/tau - diag.XHX.star) 
++       
++       ETA <- exp(ETA.log)
++       j.star <- G.1.star[which.max(ETA.log)]
++       if (j.star == i.star) {
++         break
++       } else {
++         G.1 = setdiff(G.1.star,j.star)
++         G.0 = setdiff(seq(1,p),G.1)
++       }
++     }
++     X.r.star=as.matrix(X1[,G.1])
++     # tau<-optim(1,g.tau,method="Brent",lower=0,upper=10^3)$par
++     # if(abs(tau.new-tau)<(0.1)^5){break}
++     #} #END of for loop in goh
++     ########################################
++     #END: Deterministic Search #############
++     ########################################
++     
++     ##################################################
++     
++     tXy.g1<-as.matrix(tXy[G.1])
++     yy.star <- sum.y2-as.numeric(t(tXy.g1)%*%(solve(crossprod(X.r.star)+1/tau*I_k)%*%tXy.g1))  # Shiqiang
++     marginal.FNVS[k] <- -0.5*(a.sigma+n)*log(yy.star + b.sigma) -0.5*k*log(tau) - 
++       0.5*(determinant(crossprod(X.r.star)+1/tau*I_k,logarithm = TRUE)$modulus)[1] - log.choose # Shiqiang: & put lchoose in the outside of for loop
++     G1.FNVS[[k]] <- G.1
++     
++     ##########################
++     ## 2. Stochastic Search ##
++     ##########################
++     marginal.count=rep(NA, mcsize)
++     G.1.tilde<-G.1
++     G.0.tilde<-G.0
++     G.1.tilde.store=array(NA,dim = c(mcsize,k))
++     for(count in 1:mcsize){
++       X.r <- X1[,G.1.tilde]
++       X_r <- X1[,G.0.tilde]
++       # inv.XX.r <- solve(crossprod(X.r)+1/tau*I_k)
++       # tX.rX_r<-t(X.r)%*%X_r
++       # diag.XHX<-d.tXX[G.0.tilde]- diag(t(tX.rX_r)%*%inv.XX.r%*%tX.rX_r)
++       # tXX.Xy<-(inv.XX.r%*%tXy[G.1.tilde])
++       # tyHy<-sum.y2-t(tXy[G.1.tilde])%*%tXX.Xy
++       # tXHy<-tXy[G.0.tilde]-t(tX.rX_r)%*%tXX.Xy
++       # XI.log <- -0.5*(a.sigma+n)*log(rep(tyHy,p-k)-(tXHy)^2/(1/tau+diag.XHX) + b.sigma) - 0.5 * log(1/tau + diag.XHX)
++       # XI <- exp(XI.log)
++       
++       tX.rX_r<-t(X.r)%*%X_r
++       tXX.r.tau<-(crossprod(X.r)+1/tau*I_k)
++       Decomp<-eigen(tXX.r.tau,symmetric=TRUE)
++       
++       if(k==1){half.tXX.r.tau<-Decomp$vectors*(1/sqrt(Decomp$values))}else{
++         half.tXX.r.tau<-Decomp$vectors%*%diag(1/sqrt(Decomp$values))}
++       
++       half.XHX<-crossprod(half.tXX.r.tau,tX.rX_r)
++       diag.XHX<-d.tXX[G.0.tilde]-colSums(half.XHX^2)
++       half.Hy<-crossprod(half.tXX.r.tau,tXy[G.1.tilde])
++       tyHy<-sum.y2-sum(half.Hy^2)
++       #tXHy<-tXy[G.0.tilde]-t(tX.rX_r)%*%tXX.Xy
++       tXHy<-as.numeric(tXy[G.0.tilde]-crossprod(half.XHX,half.Hy))
++       XI.log <- -0.5*(a.sigma+n)*log(tyHy-(tXHy)^2/(1/tau+diag.XHX) + b.sigma) - 
++         0.5 * log(1/tau + diag.XHX)
++       xi.log1 <- sort(XI.log,decreasing = TRUE)[1:2]
++       if (count == 1) {
++         if (xi.log1[1]-xi.log1[2]>log(2)) {
++           tem = (xi.log1[2] - xi.log1[1])/log(0.5)
++         } else {
++           tem = 1
++         }
++       }
++       XI.log1 <- XI.log/tem
++       XI <- exp(XI.log1-max(XI.log1))
++       # plot(XI/sum(XI))
++       i.star <- G.0.tilde[sample(x = c(1:length(XI)),size = 1, prob = XI/sum(XI))]
++       G.1.star <- sort(union(G.1.tilde,i.star)) 
++       X.r.star <- X1[,G.1.star]
++       # H.r.star <- I_n-X.r.star%*%solve(crossprod(X.r.star)+1/tau*I_k1)%*%t(X.r.star)# Shiqiang
++       # diag.XHX.star <- diag(t(X.r.star)%*%H.r.star%*%X.r.star) # Shiqiang
++       # ETA.log <- -0.5*(a.sigma+n)*log(rep(t(y1)%*%H.r.star%*%y1,k+1) +
++       #                                   (t(X.r.star)%*%H.r.star%*%y1)^2/(1/tau-diag.XHX.star) + b.sigma) -
++       #   0.5 * log(1/tau - diag.XHX.star) # Shiqiang
++       # ETA <- exp(ETA.log)
++       tXX.r.tau.star<-(crossprod(X.r.star)+1/tau*I_k1)
++       Decomp.star<-eigen(tXX.r.tau.star,symmetric=TRUE)
++       half.tXX.r.tau.star<-Decomp.star$vectors%*%diag(1/sqrt(Decomp.star$values))
++       half.XHX.star<-crossprod(half.tXX.r.tau.star,crossprod(X.r.star))
++       diag.XHX.star<-d.tXX[G.1.star]-colSums(half.XHX.star^2)
++       half.Hy.star<-crossprod(half.tXX.r.tau.star,tXy[G.1.star])
++       tyHy.star<-sum.y2-sum(half.Hy.star^2)
++       tXHy.star<-as.numeric(tXy[G.1.star]-crossprod(half.XHX.star,half.Hy.star))
++       ETA.log <- (-0.5*(a.sigma+n)*log(tyHy.star + (tXHy.star)^2/(1/tau-diag.XHX.star) + b.sigma)-
++                     0.5 * log(1/tau - diag.XHX.star))/tem
++       ETA <- exp(ETA.log-max(ETA.log))
++       j.star <- G.1.star[sample(x = c(1:length(ETA)),size = 1, prob = ETA/sum(ETA) )]
++       G.1.tilde = setdiff(G.1.star,j.star)
++       G.1.tilde.store[count,] <- G.1.tilde
++       G.0.tilde = setdiff(seq(1,p),G.1.tilde)
++       X.r.star=as.matrix(X1[,G.1.tilde])
++       
++       #H.r.star <- I_n-X.r.star%*%solve(crossprod(X.r.star)+1/tau*I_k)%*%t(X.r.star)
++       #marginal.count[count] <- -0.5*(a.sigma+n)*log(t(y1)%*%H.r.star%*%y1 + b.sigma) -0.5*k*log(tau) - 
++       #  0.5*determinant(crossprod(X.r.star)+1/tau*I_k,logarithm = TRUE)$modulus - log.choose # Shiqiang
++       tXy.g1<-as.matrix(tXy[G.1.tilde])
++       yy.star <- sum.y2-as.numeric(t(tXy.g1)%*%(solve(crossprod(X.r.star)+1/tau*I_k)%*%tXy.g1))  # Shiqiang
++       marginal.count[count] <- -0.5*(a.sigma+n)*log(yy.star + b.sigma) -0.5*k*log(tau) - 
++         0.5*(determinant(crossprod(X.r.star)+1/tau*I_k,logarithm = TRUE)$modulus)[1] - log.choose # Shiqiang: & put lchoose in the outside of for loop
++       
++       
++       if (marginal.FNVS[k] < marginal.count[count]) {
++         # print(count)
++         G.1 <- G.1.tilde
++         G.0 <- setdiff(seq(1,p),G.1)
++         marginal.hy[k] <- marginal.count[count]
++         print(marginal.hy[k])
++         # print(marginal.hy[k])
++         break}
++     } # for (count in 1:mcsize) ends
++     ###################################################
++     ###########################
++     ##END: Stochastic Search ##
++     ###########################
++     if (count == mcsize) {break}
++   } # whie (marginal.hy[k]<marginal.FNVS[k]) ends here
++   ###########################
++   ##END: Hybrid Search     ##
++   ###########################
++   l=which.max(marginal.count)
++   if (max(marginal.count)>marginal.FNVS[k]) {
++     G1.hy[[k]] <- G.1.tilde.store[l,]
++     marginal.hy[k] = marginal.count[l]
++   } else {
++     G1.hy[[k]] <- G1.FNVS[[k]]
++     marginal.hy[k] = marginal.FNVS[k]
++   }
++   print(name.genes.X1[G1.hy[[k]]])
++   print(name.genes.X1[G1.hy[[k]]]%in%ham.genes)
++   print(sum(name.genes.X1[G1.hy[[k]]]%in%ham.genes))
++ } # for (k in 1:k0) ends here
+[1] 1
+[1] "C17orf53"
+[1] FALSE
+[1] 0
+[1] 2
+[1] "CDC25C" "NBR2"  
+[1] FALSE  TRUE
+[1] 1
+[1] 3
+[1] "DTL"   "NBR2"  "VPS25"
+[1] FALSE  TRUE FALSE
+[1] 1
+[1] 4
+[1] "DTL"   "NBR2"  "VPS25" "SPAG5"
+[1] FALSE  TRUE FALSE FALSE
+[1] 1
+[1] 5
+[1] -1482.196
+[1] "DTL"   "NBR2"  "VPS25" "SPAG5" "RBM23"
+[1] FALSE  TRUE FALSE FALSE FALSE
+[1] 1
+[1] 6
+[1] -1482.542
+[1] -1481.912
+[1] "DTL"      "NBR2"     "FLJ10241" "VPS25"    "SPAG5"    "RBM23"   
+[1] FALSE  TRUE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 7
+[1] "C10orf76" "DTL"      "NBR2"     "VPS25"    "RBM23"    "GINS1"    "CMTM5"   
+[1] FALSE FALSE  TRUE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 8
+[1] "KLHL13"   "DTL"      "NBR2"     "CRBN"     "ARHGAP19" "VPS25"    "GNL1"    
+[8] "GINS1"   
+[1] FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 9
+[1] -1487.23
+[1] -1483.235
+[1] -1481.304
+[1] "RPL27"    "C10orf76" "DTL"      "NBR2"     "KHDRBS1"  "ZBTB26"   "POLQ"    
+[8] "VPS25"    "CMTM5"   
+[1] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 10
+[1] -1498.261
+[1] -1497.583
+[1] -1495.674
+[1] -1491.732
+ [1] "CENPQ"  "DTL"    "NBR2"   "ROR1"   "VBP1"   "TADA3L" "CMTM5"  "TUBA1B"
+ [9] "KSR1"   "PSME3" 
+ [1] FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 11
+[1] -1497.74
+[1] -1494.204
+[1] -1493.955
+[1] -1493.207
+[1] -1491.937
+[1] -1491.621
+[1] -1491.271
+[1] -1490.174
+ [1] "PPP3CB" "RPS27A" "NBR2"   "OIP5"   "SKP1A"  "CHIC2"  "VBP1"   "TADA3L"
+ [9] "MCM6"   "GINS1"  "PSME3" 
+ [1] FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 12
+[1] -1499.702
+ [1] "GPR108"     "NBR2"       "KRTAP10-10" "CENPK"      "NFATC1"    
+ [6] "RC3H2"      "CUTC"       "VBP1"       "TOP2A"      "UHRF1"     
+[11] "CMTM5"      "PSME3"     
+ [1] FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 13
+[1] -1501.853
+ [1] "CENPQ"    "DTL"      "NBR2"     "KIAA1542" "CUTC"     "ZRANB3"  
+ [7] "VPS25"    "VBP1"     "GNL1"     "CMTM5"    "TUBA1B"   "KSR1"    
+[13] "PSME3"   
+ [1] FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE
+[1] 1
+[1] 14
+[1] -1501.978
+[1] -1501.717
+[1] -1499.666
+[1] -1497.391
+ [1] "CENPQ"    "RPL27"    "AASDH"    "C10orf76" "DTL"      "NBR2"    
+ [7] "KIAA1542" "VBP1"     "TADA3L"   "TOP2A"    "C20orf94" "CMTM5"   
+[13] "TUBA1B"   "PSME3"   
+ [1] FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE
+[1] 1
+[1] 15
+[1] -1511.16
+[1] -1509.507
+[1] -1508.038
+ [1] "CENPQ"  "TNKS"   "POLE3"  "NBR2"   "NFATC1" "CUTC"   "FBXO18" "TUBA1C"
+ [9] "VBP1"   "TOP2A"  "MCM6"   "IGFBP5" "CMTM5"  "PRKD3"  "PSME3" 
+ [1] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE
+[1] 1
+[1] 16
+[1] -1517.363
+[1] -1511.63
+[1] -1508.768
+[1] -1508.672
+[1] -1508.612
+[1] -1507.465
+[1] -1507.308
+[1] -1506.176
+[1] -1502.283
+ [1] "AASDH"   "NBR2"    "NFATC1"  "SUMO2"   "KHDRBS1" "ARIH1"   "CCDC56" 
+ [8] "ZBTB26"  "XRCC2"   "SPAG5"   "GRHPR"   "MCM6"    "TASP1"   "CMTM5"  
+[15] "SYNE2"   "COPS2"  
+ [1] FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE
+[1] 2
+[1] 17
+[1] -1518.417
+ [1] "CHD8"     "RPL27"    "ABCC1"    "AASDH"    "C10orf76" "DTL"     
+ [7] "NBR2"     "NFATC1"   "CCDC56"   "C12orf48" "DARS"     "HMGN2"   
+[13] "VBP1"     "C3orf10"  "TOP2A"    "C20orf94" "CMTM5"   
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 18
+[1] -1524.589
+[1] -1514.514
+[1] -1505.164
+ [1] "ZDHHC6"   "C10orf76" "DTL"      "NBR2"     "SRPK1"    "MPHOSPH1"
+ [7] "NFATC1"   "RAB25"    "KIAA1542" "CCDC56"   "KCNC4"    "DDOST"   
+[13] "DARS"     "SNX12"    "IL1RAP"   "VBP1"     "TBC1D25"  "CMTM5"   
+ [1] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 19
+[1] -1516.346
+[1] -1506.584
+[1] -1505.51
+ [1] "HLA-DRA"       "NBR2"          "HS1BP3"        "CENPK"        
+ [5] "NFATC1"        "KHDRBS1"       "CCDC56"        "SAA1"         
+ [9] "ZSCAN2"        "ATAD1"         "DKFZp566H0824" "SPAG5"        
+[13] "CASKIN2"       "VBP1"          "C3orf10"       "CMTM5"        
+[17] "THOC2"         "OR5J2"         "ADSL"         
+ [1] FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 20
+[1] -1516.856
+[1] -1514.834
+[1] -1513.967
+[1] -1513.338
+[1] -1508.874
+ [1] "UNK"        "SALL2"      "DTL"        "NBR2"       "NFATC1"    
+ [6] "CYB5R1"     "CCDC56"     "HIST2H2AA3" "METTL7A"    "C12orf48"  
+[11] "DMRT3"      "ATAD1"      "HMGN2"      "SPAG5"      "VBP1"      
+[16] "C3orf10"    "MCM6"       "TASP1"      "THOC2"      "NRIP1"     
+ [1] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 21
+[1] -1525.898
+[1] -1524.256
+[1] -1521.911
+[1] -1518.729
+[1] -1511.342
+[1] -1510.438
+ [1] "UNK"      "PITRM1"   "NBR2"     "NFATC1"   "CYB5R1"   "JAK1"    
+ [7] "KHDRBS1"  "C6orf108" "NAP1L1"   "CCDC56"   "CKS2"     "XRCC2"   
+[13] "CEACAM6"  "ATAD1"    "SPAG5"    "SH3BGRL"  "VBP1"     "C3orf10" 
+[19] "TPX2"     "IGFBP5"   "CMTM5"   
+ [1] FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 2
+[1] 22
+[1] -1535.68
+[1] -1533.223
+[1] -1526.246
+[1] -1521.445
+[1] -1520.468
+[1] -1511.172
+[1] -1509.956
+ [1] "UNK"        "GLB1L3"     "TRMT11"     "NBR2"       "OIP5"      
+ [6] "NFATC1"     "KHDRBS1"    "CCDC56"     "HIST2H2AA3" "FLOT2"     
+[11] "ATAD1"      "REEP1"      "HIP2"       "PBK"        "VBP1"      
+[16] "C3orf10"    "TCEB2"      "MCM6"       "TASP1"      "INPP5F"    
+[21] "CMTM5"      "THOC2"     
+ [1] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 23
+[1] -1537.156
+ [1] "TMPO"     "UNK"      "ATXN1"    "GABBR2"   "AASDH"    "DTL"     
+ [7] "NBR2"     "MND1"     "PLEKHM2"  "SNAI1"    "CD99L2"   "CCDC56"  
+[13] "ZYX"      "CLCA1"    "SEC22C"   "DARS"     "VBP1"     "C3orf10" 
+[19] "ZMYM1"    "C20orf94" "WDR51A"   "KIAA2013" "PSME3"   
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 24
+[1] -1546.028
+[1] -1533.997
+[1] -1532.971
+ [1] "RPL27"    "UNK"      "EMP2"     "TRMT11"   "GABBR2"   "AASDH"   
+ [7] "C10orf76" "GALK2"    "NBR2"     "SRPK1"    "CENPK"    "CCDC56"  
+[13] "RAX"      "CLCA1"    "ANKRD45"  "KL"       "C3orf10"  "TOP2A"   
+[19] "MCM6"     "C20orf94" "KPNA6"    "TMEM99"   "CMTM5"    "WDR23"   
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 25
+[1] -1556.551
+[1] -1556.493
+[1] -1551.138
+[1] -1546.674
+[1] -1545.345
+[1] -1537.229
+[1] -1536.775
+[1] -1534.556
+ [1] "CENPQ"    "SDF2"     "CBLN3"    "PTBP2"    "SMEK2"    "C1orf172"
+ [7] "NBR2"     "C8orf76"  "PRRG4"    "CCDC56"   "RC3H2"    "PRSS35"  
+[13] "FBXO18"   "MAGEF1"   "THUMPD3"  "XRCC2"    "ALDH18A1" "SPAG5"   
+[19] "ZMYM1"    "MCM6"     "TASP1"    "SYNE2"    "ATP8B2"   "NRIP1"   
+[25] "PSME3"   
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE
+[1] 2
+[1] 26
+[1] -1560.273
+[1] -1552.39
+ [1] "CEACAM8"  "CBLN3"    "GLI1"     "TRMT11"   "LNX1"     "CDC25C"  
+ [7] "NBR2"     "CLC"      "TLK1"     "CYB5R1"   "JAK1"     "NAP1L1"  
+[13] "CCDC56"   "RC3H2"    "THUMPD3"  "XRCC2"    "DTD1"     "ALDH18A1"
+[19] "ACYP2"    "SPAG5"    "CHP2"     "NBR1"     "INPP5F"   "ATP8B2"  
+[25] "NRIP1"    "PCNA"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE
+[25] FALSE FALSE
+[1] 3
+[1] 27
+[1] -1559.574
+[1] -1558.374
+[1] -1553.318
+[1] -1551.75
+ [1] "TMEM133"   "CRIP3"     "C1orf172"  "CDC25C"    "DTL"       "NBR2"     
+ [7] "CYB5R1"    "FAM98C"    "KHDRBS1"   "TNFRSF10D" "NAP1L1"    "CCDC56"   
+[13] "RC3H2"     "THADA"     "THUMPD3"   "GLT8D1"    "XRCC2"     "ZRANB3"   
+[19] "ACYP2"     "SPAG5"     "PDZD2"     "RAB10"     "ROR1"      "TCEAL1"   
+[25] "TASP1"     "CMTM5"     "OR5J2"    
+ [1] FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE
+[1] 2
+[1] 28
+[1] -1572.087
+[1] -1543.869
+[1] -1543.035
+[1] -1542.093
+[1] -1541.935
+[1] -1537.517
+ [1] "UNK"        "PI4KB"      "TRMT11"     "MGAT4A"     "DTL"       
+ [6] "NBR2"       "PHC2"       "CYB5R1"     "RPS19"      "TNFRSF10D" 
+[11] "CCDC56"     "HIST2H2AA3" "RC3H2"      "DDX47"      "XRCC2"     
+[16] "TNFRSF11B"  "SIGIRR"     "ALDH18A1"   "RNF149"     "SPAG5"     
+[21] "UBE2C"      "NBR1"       "CMTM5"      "ATP8B2"     "NRIP1"     
+[26] "POU5F2"     "OR5J2"      "KIAA2013"  
+ [1] FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE
+[1] 3
+[1] 29
+[1] -1564.954
+[1] -1560.464
+[1] -1559.719
+[1] -1557.231
+[1] -1549.184
+ [1] "DOK5"      "DMPK"      "DTL"       "NBR2"      "HS1BP3"    "MPHOSPH1" 
+ [7] "NT5C3"     "FLJ10241"  "FUT1"      "C3orf63"   "CYB5R1"    "TNFRSF10D"
+[13] "CD99L2"    "RC3H2"     "EEFSEC"    "TMBIM4"    "THUMPD3"   "ZRANB3"   
+[19] "POLQ"      "ALDH18A1"  "C1orf215"  "C5orf13"   "VPS25"     "PDZD2"    
+[25] "KPNA6"     "UTP6"      "ATP8B2"    "OR5J2"     "KIAA2013" 
+ [1] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 30
+[1] -1578.095
+[1] -1572.56
+[1] -1557.513
+ [1] "TRAIP"    "MFGE8"    "ABHD8"    "CBLN3"    "GLI1"     "AASDH"   
+ [7] "DTL"      "NBR2"     "PSG6"     "KIAA1033" "CSRP2BP"  "LRPPRC"  
+[13] "CYB5R1"   "KHDRBS1"  "ARIH1"    "C1orf91"  "ABT1"     "VAC14"   
+[19] "ZNF791"   "SEC22C"   "COL20A1"  "AP3M1"    "PARP8"    "ARHGAP19"
+[25] "VPS25"    "PDZD2"    "C3orf10"  "GGA3"     "CISD2"    "PSME3"   
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 31
+[1] -1575.357
+[1] -1568.53
+[1] -1567.791
+ [1] "TRAIP"     "RANBP10"   "GLI1"      "GABBR2"    "AASDH"     "NBR2"     
+ [7] "PSG6"      "KIAA1033"  "ARIH1"     "CCDC56"    "FBXW7"     "KIAA1881" 
+[13] "TAF12"     "SEC22C"    "XRCC2"     "COL20A1"   "TNFRSF11B" "PANX2"    
+[19] "URM1"      "ATAD1"     "PDSS1"     "TUBA1C"    "MAS1L"     "SPAG5"    
+[25] "EXT2"      "C3orf10"   "CENPM"     "DEF8"      "GGA3"      "NRIP1"    
+[31] "PSME3"    
+ [1] FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 2
+[1] 32
+[1] -1581.924
+[1] -1579.396
+[1] -1573.438
+[1] -1563.451
+[1] -1556.736
+[1] -1554.553
+[1] -1554.472
+ [1] "ABHD8"    "CBLN3"    "GLI1"     "ZCCHC6"   "AASDH"    "DTL"     
+ [7] "NBR2"     "KIAA1033" "CSRP2BP"  "CYB5R1"   "CAMK1D"   "JAK1"    
+[13] "CEACAM3"  "FABP5"    "ARIH1"    "CCDC56"   "FBXW7"    "PRSS35"  
+[19] "TAF12"    "XRCC2"    "COL20A1"  "AP3M1"    "ADH1A"    "CD2BP2"  
+[25] "ATAD1"    "VPS25"    "SPAG5"    "VBP1"     "C3orf10"  "KCNJ10"  
+[31] "INPP5F"   "GGA3"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 2
+[1] 33
+[1] -1580.372
+[1] -1579.3
+[1] -1575.826
+ [1] "CEACAM8"   "UNK"       "CBLN3"     "BBS7"      "GLI1"      "AASDH"    
+ [7] "NBR2"      "C8orf76"   "SRPK1"     "JAK1"      "CCDC56"    "CUTC"     
+[13] "C14orf100" "EPC1"      "C10orf88"  "SEC22C"    "COL20A1"   "POLQ"     
+[19] "EPS8"      "ATAD1"     "RBM9"      "BBS5"      "PRCP"      "VBP1"     
+[25] "C3orf10"   "TOP2A"     "C20orf94"  "NRIP1"     "TUBA1B"    "WDR51A"   
+[31] "SACS"      "ADSL"      "PSME3"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 34
+[1] -1582.283
+[1] -1579.969
+[1] -1579.556
+[1] -1579.372
+[1] -1577.002
+[1] -1572.621
+ [1] "TRAIP"         "C16orf24"      "UNK"           "VANGL1"       
+ [5] "ZP4"           "NBR2"          "SRPK1"         "MPHOSPH1"     
+ [9] "OIP5"          "AKAP8"         "FLJ10241"      "PRRG4"        
+[13] "QPCT"          "CMTM2"         "STK3"          "BCAS2"        
+[17] "TXNL4A"        "CCDC56"        "TMBIM4"        "SEC22C"       
+[21] "DTD1"          "ANKRD45"       "AURKAIP1"      "TGM1"         
+[25] "C3orf10"       "RP5-1054A22.3" "TOP2A"         "MCM6"         
+[29] "C20orf94"      "KPNA6"         "MSH6"          "NRIP1"        
+[33] "FGFRL1"        "SACS"         
+ [1] FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE
+[1] 2
+[1] 35
+[1] -1602.337
+[1] -1597.369
+[1] -1593.193
+[1] -1585.473
+ [1] "CENPQ"    "ABHD8"    "UNK"      "TNFRSF1B" "UBE2J2"   "CPLX3"   
+ [7] "GLI1"     "GABBR2"   "FTSJ1"    "NBR2"     "TMPRSS4"  "SCAP"    
+[13] "FLJ10241" "FLOT1"    "ARIH1"    "CCDC56"   "CUTC"     "PPFIBP2" 
+[19] "SARS"     "FAM79B"   "SEC22C"   "AP3M1"    "BBS5"     "IRF8"    
+[25] "C3orf10"  "TBC1D25"  "MCM6"     "C20orf94" "IGFBP5"   "NRIP1"   
+[31] "WDR51A"   "MLX"      "SACS"     "BUB1B"    "POMT2"   
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 36
+[1] -1609.105
+[1] -1598.419
+[1] -1596.611
+ [1] "PRSSL1"   "CENPQ"    "SMC6"     "TRAIP"    "EML1"     "UNK"     
+ [7] "DNMT3A"   "TXNL4B"   "NBR2"     "CENPK"    "QPCT"     "FUT1"    
+[13] "CCDC56"   "CUTC"     "OBP2B"    "GFI1B"    "LTF"      "SEC22C"  
+[19] "ANKRD45"  "ATAD1"    "RPL10"    "C1orf35"  "SCNM1"    "SPAG5"   
+[25] "ZMYND8"   "VBP1"     "C3orf10"  "SLC28A1"  "MCM6"     "C20orf94"
+[31] "KPNA6"    "IGFBP5"   "DCLRE1A"  "NRIP1"    "OSR1"     "PSME3"   
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 37
+[1] -1603.613
+[1] -1602.982
+[1] -1602.106
+[1] -1601.411
+[1] -1599.638
+[1] -1594.642
+[1] -1593.795
+[1] -1587.623
+[1] -1581.863
+[1] -1580.841
+[1] -1572.865
+[1] -1572.858
+ [1] "PLIN"         "DOK5"         "ANKRD13B"     "NTF3"         "REEP3"       
+ [6] "NBR2"         "KIAA1033"     "CLC"          "TRIM6-TRIM34" "CNTN1"       
+[11] "EFNB3"        "QPCT"         "TNFRSF10D"    "CCDC56"       "ATAD4"       
+[16] "ZNF76"        "ZBTB26"       "R3HDM2"       "ZMYM5"        "HSCB"        
+[21] "CHMP1A"       "XRCC2"        "TATDN2"       "ATP6V0D2"     "TGM1"        
+[26] "SOX9"         "EXT2"         "CENPM"        "NBR1"         "ACP5"        
+[31] "ZNF207"       "NRIP1"        "AGPAT4"       "SACS"         "OSR1"        
+[36] "OR5J2"        "BUB1B"       
+ [1] FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE
+[1] 3
+[1] 38
+[1] -1599.74
+[1] -1597.705
+[1] -1595.762
+[1] -1593.346
+ [1] "CENPQ"     "SEC14L1"   "HOXB5"     "ABHD8"     "CHCHD2"    "NSDHL"    
+ [7] "DNMT3A"    "RNF216"    "ATXN1"     "AASDH"     "DUOX1"     "C20orf12" 
+[13] "NBR2"      "C8orf76"   "CLC"       "ABHD9"     "C9orf72"   "TNFRSF10D"
+[19] "ARIH1"     "CCDC56"    "ASF1B"     "CLCA1"     "ZSCAN12"   "SESN1"    
+[25] "SSB"       "TATDN2"    "ATAD1"     "SPRY2"     "SPAG5"     "RNF122"   
+[31] "EXT2"      "TADA3L"    "ZMYM1"     "CENPM"     "KIAA0226"  "NRIP1"    
+[37] "NRAS"      "PSME3"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13]  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE
+[1] 1
+[1] 39
+[1] -1606.74
+[1] -1593.966
+[1] -1593.3
+[1] -1592.491
+[1] -1591.751
+ [1] "KLHL13"   "CBLN3"    "ANKRD13B" "RPLP0"    "CDC25C"   "DTL"     
+ [7] "NBR2"     "BRPF3"    "FANK1"    "CCDC115"  "CLC"      "SAMM50"  
+[13] "OIP5"     "LCE1F"    "FLJ10241" "CEBPA"    "UBL7"     "CLEC4D"  
+[19] "FBXW7"    "ZBTB26"   "C10orf88" "LILRA1"   "APH1A"    "CHIT1"   
+[25] "SCN1B"    "PH-4"     "IRF8"     "VPS25"    "C3orf10"  "C6orf97" 
+[31] "ZMYM1"    "CRTAC1"   "ZNF354A"  "SCMH1"    "SYNE2"    "SACS"    
+[37] "KIAA2013" "C4orf14"  "PSME3"   
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE
+[1] 1
+[1] 40
+[1] -1619.279
+[1] -1612.279
+[1] -1611.461
+[1] -1609.885
+[1] -1608.533
+[1] -1603.096
+[1] -1596.31
+[1] -1592.034
+ [1] "KLHL13"     "RPL27"      "TCTN1"      "PKMYT1"     "CBLN3"     
+ [6] "LNX1"       "AASDH"      "CPSF3L"     "DTL"        "NBR2"      
+[11] "FANK1"      "CCDC115"    "CLC"        "TOR2A"      "LCE1F"     
+[16] "FLJ10241"   "HIST2H2AA3" "RALBP1"     "PRSS35"     "ZBTB26"    
+[21] "ZNF791"     "RASGEF1B"   "COL20A1"    "ZNF592"     "ATF7IP"    
+[26] "VPS25"      "SPAG5"      "NRD1"       "C3orf10"    "SETD6"     
+[31] "KCNJ10"     "ZMYM1"      "CENPM"      "SYNE2"      "NOTUM"     
+[36] "RPL22L1"    "COPS2"      "SACS"       "KIAA2013"   "ZNF436"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE
+[1] 1
+[1] 41
+[1] -1632.039
+[1] -1626.044
+[1] -1624.926
+[1] -1620.556
+[1] -1619.967
+[1] -1610.052
+[1] -1607.919
+ [1] "KLHL13"   "CENPQ"    "CXCL13"   "BTBD14A"  "ABHD8"    "C12orf30"
+ [7] "CBLN3"    "CPOX"     "ZP4"      "NBR2"     "C8orf76"  "CISD1"   
+[13] "BEX5"     "CLC"      "CENPK"    "PGLS"     "ARIH1"    "CCDC56"  
+[19] "CHRNA3"   "PPM1B"    "C3orf32"  "HEPACAM"  "TMEM100"  "ALDH18A1"
+[25] "ATAD1"    "ACYP2"    "COG1"     "SPAG5"    "CHML"     "LY6D"    
+[31] "C3orf10"  "ZMYM1"    "PIK3CA"   "UHRF1"    "ZNF169"   "WDR23"   
+[37] "MAGEA4"   "SYNE2"    "C4orf14"  "PSME3"    "COQ2"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 42
+[1] -1629.243
+ [1] "CENPQ"    "CXCL13"   "ABHD8"    "CBLN3"    "RPLP0"    "LNX1"    
+ [7] "C20orf12" "NBR2"     "FANK1"    "BEX5"     "CLC"      "C7orf50" 
+[13] "CENPK"    "FLJ10241" "PHC2"     "DDAH2"    "VRK1"     "ARIH1"   
+[19] "CCDC56"   "LTF"      "SESN1"    "CMTM4"    "C9orf3"   "COL20A1" 
+[25] "ATAD1"    "SERF1A"   "VPS25"    "SPAG5"    "C3orf10"  "ZMYM1"   
+[31] "CD320"    "UHRF1"    "DEF8"     "NR3C2"    "SLC27A6"  "WDR23"   
+[37] "MAGEA4"   "SYNE2"    "COPS2"    "LRRC50"   "MLX"      "C4orf14" 
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 43
+[1] -1647.924
+[1] -1643.55
+[1] -1636.626
+[1] -1634.767
+[1] -1634.019
+[1] -1632.75
+[1] -1630.159
+[1] -1628.943
+[1] -1627.319
+[1] -1626.677
+[1] -1625.537
+[1] -1624.786
+[1] -1622.7
+[1] -1619.675
+[1] -1617.122
+ [1] "CENPQ"     "ABHD8"     "CBLN3"     "DLG1"      "IFI16"     "RPLP0"    
+ [7] "AASDH"     "ADAMDEC1"  "C20orf12"  "NBR2"      "C8orf76"   "CLC"      
+[13] "CIITA"     "CENPK"     "FLJ10241"  "PPP2R5E"   "TNFRSF10D" "CHI3L1"   
+[19] "CCDC56"    "RAX"       "ASF1B"     "TCEA2"     "CACNG8"    "CNTNAP3"  
+[25] "HEPACAM"   "CCDC4"     "ABI3BP"    "ALDH18A1"  "ANKRD19"   "B4GALT6"  
+[31] "ADSSL1"    "SENP2"     "RAD51"     "SPAG5"     "C3orf10"   "ZMYM1"    
+[37] "PRKAA2"    "PRKACB"    "WDR23"     "ATP8B2"    "PHLDB1"    "PRRG2"    
+[43] "CAMKV"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 2
+[1] 44
+[1] -1655.659
+[1] -1646.954
+[1] -1645.871
+[1] -1638.413
+[1] -1635.426
+[1] -1632.142
+[1] -1632.129
+[1] -1631.975
+[1] -1631.396
+[1] -1629.474
+[1] -1628.189
+[1] -1626.698
+[1] -1626.147
+[1] -1623.852
+ [1] "CENPQ"    "BTBD14A"  "KCNA3"    "ABHD8"    "CBLN3"    "ZMYND12" 
+ [7] "PDYN"     "CLEC4E"   "GLI1"     "RPLP0"    "NR3C1"    "ZP4"     
+[13] "NBR2"     "PSG6"     "CISD1"    "FANK1"    "CLC"      "OIP5"    
+[19] "XAB1"     "PLB1"     "PPP2R5E"  "UBL7"     "LSAMP"    "FAM126A" 
+[25] "SAA1"     "ZNF219"   "HNRPM"    "C10orf88" "ASH2L"    "ALDH18A1"
+[31] "PERP"     "VPS25"    "SPAG5"    "C3orf10"  "MGMT"     "ZMYM1"   
+[37] "MCM6"     "C18orf51" "WDR23"    "MAGEA4"   "FABP7"    "C4orf14" 
+[43] "PSME3"    "COQ2"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13]  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 45
+[1] -1655.966
+[1] -1651.711
+[1] -1643.232
+[1] -1637.676
+[1] -1633.495
+ [1] "KLHL13"   "CENPQ"    "MRO"      "ABHD8"    "C4BPA"    "MED10"   
+ [7] "PKMYT1"   "MAP9"     "SPSB3"    "GABBR2"   "AASDH"    "NBR2"    
+[13] "HS1BP3"   "CENPK"    "SCAP"     "AMHR2"    "PROCR"    "C8orf4"  
+[19] "SPACA5"   "C3orf63"  "KHDRBS1"  "C12orf59" "CCDC56"   "TAS2R50" 
+[25] "FAM103A1" "CLCA1"    "SEC22C"   "TRPM3"    "XRCC2"    "COL20A1" 
+[31] "GTF2IRD1" "ATAD1"    "TGM1"     "XYLB"     "VPS25"    "SPAG5"   
+[37] "PLP1"     "C3orf10"  "ZFP14"    "TNRC4"    "EIF4EBP1" "APC2"    
+[43] "GGA3"     "NRIP1"    "RFX4"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 2
+[1] 46
+[1] -1643.734
+[1] -1639.612
+[1] -1637.455
+[1] -1636.923
+[1] -1635.973
+[1] -1633.22
+[1] -1632.191
+[1] -1630.956
+[1] -1629.918
+[1] -1623.376
+ [1] "DKFZP434P211" "UNK"          "KLF14"        "CBLN3"        "CRIP3"       
+ [6] "ZCCHC6"       "MATR3"        "AASDH"        "RAB33A"       "DTL"         
+[11] "NBR2"         "C8orf76"      "OIP5"         "SFXN3"        "LRPPRC"      
+[16] "FLOT1"        "TNFRSF10D"    "VRK1"         "CCDC56"       "EPC1"        
+[21] "HEXDC"        "SETMAR"       "HIST1H3C"     "CRB3"         "COL20A1"     
+[26] "AP3M1"        "MAGEL2"       "ANKS1A"       "SPAG5"        "PDZD2"       
+[31] "VBP1"         "HRB"          "FRMD1"        "EFCAB6"       "C20orf94"    
+[36] "TCEAL1"       "MGC13008"     "INPP5F"       "ZNF169"       "CACNA1G"     
+[41] "ATP8B2"       "THOC2"        "TPM1"         "CISD2"        "KIAA2013"    
+[46] "PSME3"       
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 47
+[1] -1646.102
+[1] -1643.667
+[1] -1643.568
+[1] -1639.608
+ [1] "KLHL13"   "CENPQ"    "DOK5"     "UNK"      "PKMYT1"   "RPLP0"   
+ [7] "C7orf16"  "C20orf12" "NBR2"     "FANK1"    "ERH"      "OIP5"    
+[13] "KIF23"    "MSRB2"    "FLJ10241" "NFATC1"   "ANLN"     "TRUB2"   
+[19] "FXN"      "RAB25"    "CCDC56"   "KIR2DL2"  "POLR2B"   "SEC22C"  
+[25] "GLT8D1"   "XRCC2"    "CENPA"    "ASB12"    "IWS1"     "ZFPL1"   
+[31] "ANKRD19"  "B4GALT6"  "TGM1"     "NT5C1A"   "SPAG5"    "C3orf10" 
+[37] "SLC28A1"  "ZMYM1"    "SASS6"    "TOP2A"    "TMEM99"   "COL23A1" 
+[43] "WDR23"    "APC2"     "SYNE2"    "SACS"     "PSME3"   
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 2
+[1] 48
+[1] -1661.218
+[1] -1654.545
+ [1] "RPL27"        "SNRPB2"       "BMPR1A"       "SLC35C2"      "CBLN3"       
+ [6] "RPLP0"        "TREML1"       "CDC25C"       "DTL"          "NBR2"        
+[11] "FANK1"        "FLJ10241"     "C3orf63"      "TNFRSF10D"    "CTA-216E10.6"
+[16] "UBL7"         "FBXW7"        "OBP2B"        "KIAA1958"     "EPC1"        
+[21] "SRGAP1"       "NPM3"         "ATXN7L1"      "C1orf88"      "LOC145814"   
+[26] "TUBG2"        "AMAC1L2"      "REEP1"        "BBS5"         "ODF3"        
+[31] "PIGZ"         "CORO7"        "VPS25"        "SPRY2"        "CXXC6"       
+[36] "DERA"         "C3orf10"      "KCNJ2"        "INPP5F"       "SYNE2"       
+[41] "FABP7"        "C17orf79"     "RPL22L1"      "MLX"          "BUB1B"       
+[46] "KIAA2013"     "C4orf14"      "PSME3"       
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 49
+[1] -1676.503
+[1] -1673.647
+[1] -1668.811
+[1] -1663.705
+[1] -1658.736
+[1] -1654.442
+[1] -1645.351
+[1] -1643.695
+[1] -1642.81
+ [1] "KLHL13"    "CENPQ"     "KBTBD8"    "SNRPB2"    "ZMYND17"   "PKMYT1"   
+ [7] "CBLN3"     "PDYN"      "UNC5A"     "GLI1"      "RPLP0"     "tAKR"     
+[13] "LNX1"      "CDC25C"    "MRE11A"    "LOC401127" "ZNF526"    "ZP4"      
+[19] "NBR2"      "LRRC3B"    "CLC"       "KIF23"     "MSRB2"     "FLJ10241" 
+[25] "C3orf63"   "FLOT1"     "LSAMP"     "LYCAT"     "FBXW7"     "SIRPB1"   
+[31] "TANK"      "TFF3"      "COX7A2L"   "BBS5"      "GOLGA2L1"  "IRF8"     
+[37] "SAA2"      "ATP11C"    "COG1"      "VPS25"     "C3orf10"   "GRHPR"    
+[43] "OTX2"      "STRBP"     "SYNE2"     "FABP7"     "ZNF621"    "BUB1B"    
+[49] "PSME3"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE  TRUE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[49] FALSE
+[1] 2
+[1] 50
+[1] -1668.187
+[1] -1663.081
+[1] -1662.833
+[1] -1662.311
+[1] -1659.336
+[1] -1656.291
+[1] -1656.09
+[1] -1654.715
+[1] -1654.64
+ [1] "ABHD8"     "ATG9B"     "MAP9"      "UNC5A"     "TNF"       "GLI1"     
+ [7] "KIAA1841"  "RPLP0"     "ADIPOR1"   "GABBR2"    "AASDH"     "CDC25C"   
+[13] "KCNE1L"    "RIG"       "NBR2"      "NUSAP1"    "CREBL1"    "FLJ10241" 
+[19] "ANKRD10"   "C3orf63"   "CEBPA"     "KHDRBS1"   "TNFRSF10D" "UBL7"     
+[25] "SYTL1"     "CCDC56"    "SAA1"      "KIAA1958"  "DDX47"     "ASF1B"    
+[31] "CCDC44"    "CLCA1"     "TANK"      "AP3M1"     "C6orf206"  "C17orf81" 
+[37] "KYNU"      "EIF4B"     "TRIM7"     "PDCD5"     "VPS25"     "KIAA0922" 
+[43] "C3orf10"   "DYNC2H1"   "C17orf80"  "MAGEA4"    "SYNE2"     "FABP7"    
+[49] "ACTL6A"    "BUB1B"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[49] FALSE FALSE
+[1] 1
+[1] 51
+[1] -1687.091
+[1] -1685.524
+[1] -1674.151
+[1] -1673.394
+[1] -1657.217
+[1] -1656.68
+[1] -1655.84
+[1] -1655.819
+ [1] "OSTN"      "ABHD8"     "UNK"       "TMEM116"   "CCDC112"   "GABBR2"   
+ [7] "NBR2"      "FANK1"     "C17orf53"  "HS1BP3"    "KIAA1219"  "C3orf63"  
+[13] "RPS19"     "KHDRBS1"   "UTP20"     "GLTP"      "RAB25"     "CCDC56"   
+[19] "FRMD3"     "METT10D"   "MED6"      "XPO5"      "SARS"      "CLCA1"    
+[25] "DPYSL4"    "TM9SF4"    "GEMIN6"    "DAAM2"     "OR2H2"     "SEC22C"   
+[31] "CLEC14A"   "ZSCAN2"    "ATAD1"     "MAP1A"     "RPL24"     "SHB"      
+[37] "C10orf118" "LARP5"     "RALGDS"    "LOC201229" "CHCHD8"    "IRF8"     
+[43] "PTPRZ1"    "C3orf10"   "CENPM"     "C12orf44"  "ACTL6A"    "TAF2"     
+[49] "TUBA1B"    "MLX"       "BUB1B"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[49] FALSE FALSE FALSE
+[1] 1
+[1] 52
+[1] -1691.835
+[1] -1691.149
+[1] -1680.869
+[1] -1666.81
+[1] -1664.705
+[1] -1662.857
+[1] -1659.84
+[1] -1659.553
+ [1] "CENPQ"         "ABHD8"         "SLC25A31"      "CLGN"         
+ [5] "UNC93A"        "DNMT3A"        "ART4"          "IGBP1"        
+ [9] "GABBR2"        "FN3KRP"        "NBR2"          "C13orf1"      
+[13] "FANK1"         "HS1BP3"        "UPP2"          "AMHR2"        
+[17] "CRY2"          "KIF4B"         "C3orf63"       "MND1"         
+[21] "DCUN1D4"       "RPS19"         "AMOTL1"        "JAK1"         
+[25] "C1orf164"      "KHDRBS1"       "GLTP"          "KIAA1632"     
+[29] "C5orf3"        "CCDC56"        "RAB11FIP1"     "PMP22"        
+[33] "TAS2R50"       "C6orf81"       "CLCA1"         "SEC22C"       
+[37] "CMTM4"         "APH1A"         "ATAD1"         "VPS25"        
+[41] "SPAG5"         "FKSG43"        "C3orf10"       "RP5-1054A22.3"
+[45] "NDUFB9"        "C12orf44"      "CHTF18"        "DCLRE1A"      
+[49] "ARMC5"         "TUBA1B"        "VSIG4"         "PSME3"        
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[49] FALSE FALSE FALSE FALSE
+[1] 1
+[1] 53
+[1] -1685.057
+[1] -1676.803
+[1] -1671.668
+[1] -1668.765
+[1] -1665.722
+[1] -1665.436
+[1] -1661.43
+[1] -1660.707
+[1] -1658.488
+[1] -1657.953
+[1] -1653.688
+[1] -1652.691
+[1] -1652.48
+ [1] "LARP7"     "FAM24A"    "PPP1CB"    "ABHD8"     "ZNF703"    "ZNF57"    
+ [7] "CCDC51"    "UNK"       "AMPD1"     "VANGL1"    "GLI1"      "RPLP0"    
+[13] "ZNF365"    "AASDH"     "HDAC2"     "ECAT8"     "DTL"       "NBR2"     
+[19] "ZNF557"    "CCDC115"   "ZNF510"    "MPHOSPH1"  "OIP5"      "XAB1"     
+[25] "LRPPRC"    "GDI2"      "GPR137"    "ARIH1"     "RAB25"     "LGALS1"   
+[31] "TMEM150"   "FAHD1"     "COL20A1"   "PHC3"      "TNFRSF11B" "DTD1"     
+[37] "PPP1R16B"  "PERP"      "CAMSAP1L1" "PIGZ"      "C7orf45"   "ASXL3"    
+[43] "CCKAR"     "VPS25"     "SIKE"      "RFX1"      "KCNJ10"    "ZMYM1"    
+[49] "HEATR2"    "RYR3"      "SYNE2"     "KIAA2013"  "PSME3"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[49] FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 54
+[1] -1674.393
+[1] -1673.485
+[1] -1664.213
+[1] -1663.043
+[1] -1661.825
+[1] -1656.183
+[1] -1646.797
+ [1] "CENPQ"    "ABHD8"    "DOK5"     "C16orf24" "UNK"      "C12orf30"
+ [7] "MAGEA5"   "CRIP3"    "C1orf172" "RBM15"    "GLI1"     "RPLP0"   
+[13] "RASL12"   "KIAA0284" "ECAT8"    "NBR2"     "OIP5"     "OR10P1"  
+[19] "MAP7D2"   "ARIH1"    "C17orf57" "CCDC56"   "RC3H2"    "KLHL23"  
+[25] "ASF1B"    "PVRL2"    "LTF"      "LGALS2"   "SEC22C"   "IL12RB1" 
+[31] "DTD1"     "UVRAG"    "AP3M1"    "ASB12"    "DCP1A"    "HMGN2"   
+[37] "NLE1"     "TRIM7"    "KIR2DL1"  "SPAG5"    "SLC25A45" "C3orf10" 
+[43] "KIAA1191" "MCM6"     "KPNA6"    "TA-NFKBH" "ZCRB1"    "NBR1"    
+[49] "RG9MTD3"  "PRKACB"   "CA3"      "HEATR2"   "WDR23"    "SYNE2"   
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE
+[49] FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 2
+[1] 55
+[1] -1682.234
+[1] -1675.368
+[1] -1670.891
+[1] -1670.263
+[1] -1669.656
+[1] -1668.724
+[1] -1666.848
+ [1] "CENPQ"      "CXCL13"     "VEGFB"      "SERPINB2"   "UNK"       
+ [6] "SLC35C2"    "CBLN3"      "ARL2BP"     "PGAM1"      "CHID1"     
+[11] "FAM46B"     "DTL"        "NBR2"       "SYT14"      "CLC"       
+[16] "SORBS2"     "MPHOSPH1"   "OIP5"       "RPL23AP13"  "DCUN1D4"   
+[21] "JAK1"       "RAB25"      "C17orf57"   "CCDC56"     "HIST2H2AA3"
+[26] "PRAMEF10"   "FETUB"      "HEPACAM"    "GABPA"      "TMEM100"   
+[31] "ATAD1"      "CSPG5"      "ACYP2"      "SERPINB7"   "RGPD4"     
+[36] "TRIM7"      "C17orf85"   "SPAG5"      "BPI"        "VBP1"      
+[41] "FZD7"       "TASP1"      "C12orf44"   "CPEB1"      "MGC13008"  
+[46] "INPP5F"     "CA3"        "MAGEA4"     "FABP7"      "THOC2"     
+[51] "NRAS"       "ZNF436"     "PSME3"      "ST18"       "CDC2L2"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13]  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[49] FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 56
+[1] -1684.259
+[1] -1681.5
+[1] -1679.698
+[1] -1678.371
+ [1] "USP9Y"        "TRAIP"        "ZNF703"       "USP54"        "SERPINB2"    
+ [6] "UNK"          "UBE1L2"       "PKMYT1"       "CBLN3"        "RP11-125A7.3"
+[11] "AFAP1L1"      "ARL2BP"       "CHID1"        "IL3"          "AARS2"       
+[16] "BCL2L11"      "SPC25"        "NBR2"         "SYT14"        "PRKCA"       
+[21] "OIP5"         "C3orf58"      "JAK1"         "RAB25"        "SEC24B"      
+[26] "CCDC56"       "HIST2H2AA3"   "NMUR1"        "ANKRD1"       "SOX15"       
+[31] "ODF1"         "GABPA"        "ALDH18A1"     "ATAD1"        "LYZ"         
+[36] "RNF183"       "VPS25"        "SPAG5"        "VBP1"         "C3orf10"     
+[41] "ANGEL2"       "ZNF556"       "TASP1"        "C12orf44"     "DEF8"        
+[46] "MGC13008"     "LRRC42"       "ZNF354A"      "ZNF233"       "MAGEA4"      
+[51] "THOC2"        "NRIP1"        "NRAS"         "TUBA1B"       "CD300LG"     
+[56] "PSME3"       
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[49] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 57
+[1] -1721.53
+[1] -1718.969
+[1] -1713.706
+[1] -1712.614
+[1] -1698.322
+[1] -1696.585
+[1] -1692.934
+[1] -1692.907
+[1] -1692.701
+[1] -1692.626
+[1] -1692.421
+[1] -1689.801
+[1] -1689.524
+ [1] "ROR2"     "C19orf2"  "PDIA5"    "MSH5"     "PKMYT1"   "CCDC85A" 
+ [7] "C1orf213" "CCDC112"  "ADD2"     "DNMT3A"   "SEMA6D"   "DUOX1"   
+[13] "NBR2"     "ETV5"     "ADAM32"   "SORBS2"   "HS1BP3"   "OIP5"    
+[19] "PPP5C"    "NFATC1"   "SPCS1"    "ZNF702"   "KCNMB3"   "RAB25"   
+[25] "CCDC56"   "B4GALT5"  "KIAA1958" "SPANXD"   "CNTNAP3"  "MTMR14"  
+[31] "CLCA1"    "TRPM3"    "SLC39A14" "ZSCAN2"   "AXIN2"    "GALNTL1" 
+[37] "TUBG2"    "DAD1"     "ATAD1"    "CENTB5"   "ESCO2"    "KLHL34"  
+[43] "EFHD1"    "IL1RAP"   "XRN2"     "VPS25"    "SPAG5"    "KIAA0513"
+[49] "C17orf59" "VBP1"     "KPNA6"    "C12orf44" "MGC13008" "CMTM5"   
+[55] "THOC2"    "CD300LG"  "MAPKAPK5"
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13]  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[49] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 58
+[1] -1705.423
+[1] -1703.02
+[1] -1701.681
+[1] -1698.737
+ [1] "CENPQ"     "ROR2"      "C6orf141"  "AP2A2"     "PKMYT1"    "SAC3D1"   
+ [7] "DNMT3A"    "SEMA6D"    "PDCD2L"    "NBR2"      "ADAM32"    "LOC440356"
+[13] "HS1BP3"    "OIP5"      "RPL23AP13" "NFATC1"    "CMTM2"     "ZNF517"   
+[19] "KCNMB3"    "RAB25"     "ADRA1D"    "CCDC56"    "B4GALT5"   "BIK"      
+[25] "ASF1B"     "PLA2G2E"   "ZSCAN12"   "C12orf48"  "CKS2"      "SLC7A7"   
+[31] "C1orf53"   "TUBG2"     "IL17RC"    "ATAD1"     "PARP8"     "SHC2"     
+[37] "ANKRD19"   "ESCO2"     "ZNF364"    "PLEK"      "EFHD1"     "C1orf21"  
+[43] "IL1RAP"    "FIP1L1"    "XRN2"      "SPRY2"     "SPAG5"     "KIAA0513" 
+[49] "DNAJA4"    "VBP1"      "KPNA6"     "TCEAL1"    "C12orf44"  "MGC13008" 
+[55] "ZNF74"     "ANAPC10"   "THOC2"     "CD300LG"  
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[49] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 59
+[1] -1711.939
+[1] -1703.06
+[1] -1698.543
+[1] -1697.206
+[1] -1693.418
+ [1] "PECI"      "TRAIP"     "AP2A2"     "TCTN1"     "TNF"       "ADH1C"    
+ [7] "OR4D2"     "MRFAP1"    "PARP11"    "NBR2"      "CPA5"      "PSMD13"   
+[13] "ITGB3"     "TRIB3"     "MAP3K7IP2" "HIST1H2AC" "FOLR3"     "SOAT2"    
+[19] "NFATC1"    "NDUFA12L"  "ENOSF1"    "LANCL2"    "OR6Y1"     "RAB25"    
+[25] "MC4R"      "CCDC56"    "CUTC"      "DLX6"      "NPY2R"     "EXOC1"    
+[31] "ZADH2"     "TMEM100"   "ZSCAN2"    "AMAC1L2"   "IL17RC"    "ATAD1"    
+[37] "KL"        "BBS5"      "ESCO2"     "IRF8"      "ZNRD1"     "SPAG5"    
+[43] "PLXNA4A"   "VBP1"      "CENPM"     "ZNF556"    "TASP1"     "EIF4EBP1" 
+[49] "FBP1"      "CMTM5"     "MAGEA4"    "THOC2"     "TUBA1B"    "COPS2"    
+[55] "CD300LG"   "OR5J2"     "TNN"       "LGALS8"    "PSME3"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[49] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 1
+[1] 60
+[1] -1726.257
+[1] -1721.501
+[1] -1714.949
+[1] -1695.577
+[1] -1691.836
+[1] -1685.163
+[1] -1684.135
+[1] -1676.115
+[1] -1667.364
+[1] -1666.448
+[1] -1665.641
+ [1] "NDUFAF1"  "SEPT7"    "UCKL1"    "PSD4"     "PPP4R2"   "KIAA1524"
+ [7] "KLF14"    "AFAP1L1"  "DAG1"     "ATXN1"    "LNX1"     "KIF5B"   
+[13] "NBR2"     "OR51G1"   "LY6K"     "C1orf61"  "HS1BP3"   "UQCRQ"   
+[19] "C11orf47" "NFATC1"   "IDI1"     "ARRDC1"   "FILIP1"   "MC4R"    
+[25] "PLA2G7"   "LHFP"     "CUTC"     "LPIN1"    "STOML1"   "ASF1B"   
+[31] "PPM1B"    "PSRC1"    "STMN1"    "SSB"      "CHMP1A"   "SMARCAD1"
+[37] "TMEM100"  "ZSCAN2"   "ADH1A"    "ATAD1"    "VPS54"    "IL1RAP"  
+[43] "KREMEN1"  "STOX1"    "VPS25"    "SPRY2"    "ZNF524"   "ZMYM4"   
+[49] "SUHW4"    "GKN2"     "C19orf53" "VBP1"     "PER3"     "CENPM"   
+[55] "NBR1"     "MXD1"     "AZI2"     "TUBA1B"   "CD300LG"  "OR5J2"   
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13]  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[49] FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE
+[1] 2
+[1] 61
+[1] -1736.614
+[1] -1736.086
+[1] -1731.032
+[1] -1728.117
+[1] -1722.196
+[1] -1719.131
+[1] -1707.086
+[1] -1706.902
+[1] -1704.161
+[1] -1702.408
+[1] -1700.218
+ [1] "FAM24A"   "DBNDD1"   "LRMP"     "TOM1"     "C1orf150" "PPM1F"   
+ [7] "UBE2J2"   "FLJ20489" "SLC25A40" "AASDH"    "KIF5B"    "DUOX1"   
+[13] "ABI1"     "SPC25"    "C20orf12" "RAB30"    "NBR2"     "ADAM32"  
+[19] "HS1BP3"   "RASD2"    "JAK1"     "C6orf168" "CCDC56"   "SELM"    
+[25] "FLJ38973" "PPM1B"    "AIPL1"    "MLF1"     "CLCA1"    "CKS2"    
+[31] "TRPM3"    "RDH5"     "GABPA"    "TMEM100"  "TBX4"     "ZSCAN2"  
+[37] "PPP1R16B" "COL9A2"   "ATAD1"    "PPP1R14D" "MFAP1"    "RSBN1L"  
+[43] "NSF"      "SRXN1"    "VPS25"    "SPG20"    "MAS1L"    "SPAG5"   
+[49] "HSD17B14" "VBP1"     "C3orf10"  "ZMYM1"    "CENPM"    "TASP1"   
+[55] "EIF4EBP1" "GGA3"     "NRAS"     "TUBA1B"   "KSR1"     "OPTN"    
+[61] "SSX1"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[49] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[61] FALSE
+[1] 1
+[1] 62
+[1] -1741.816
+[1] -1736.593
+[1] -1735.132
+[1] -1735.123
+[1] -1731.427
+[1] -1727.585
+[1] -1726.732
+[1] -1722.391
+[1] -1721.074
+ [1] "CENPQ"     "GYPC"      "ABHD8"     "TOM1"      "CACNA1S"   "PPM1F"    
+ [7] "B9D2"      "FSCN1"     "SHOX2"     "NBR2"      "CCDC66"    "SPZ1"     
+[13] "SORBS2"    "HS1BP3"    "PRCC"      "CALCOCO1"  "LOC400566" "GSN"      
+[19] "NEK1"      "CAMK2A"    "OTUD5"     "DOCK5"     "JAK1"      "FLOT1"    
+[25] "TNFRSF10D" "C17orf57"  "CCDC56"    "CYBRD1"    "PPM1B"     "EIF4E3"   
+[31] "R3HDM2"    "CKS2"      "HEPACAM"   "POLQ"      "ZSCAN2"    "COL9A2"   
+[37] "ATAD1"     "GABRA1"    "ESCO2"     "PRCP"      "XRN2"      "VPS25"    
+[43] "SPAG5"     "ATPBD1C"   "PLP1"      "VBP1"      "C3orf10"   "FZD7"     
+[49] "ZMYM1"     "FADS3"     "OCA2"      "CENPM"     "COP1"      "GGA3"     
+[55] "NRAS"      "KSR1"      "AGPAT4"    "COASY"     "OPTN"      "FNDC3A"   
+[61] "KLC1"      "PSME3"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[49] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[61] FALSE FALSE
+[1] 1
+[1] 63
+[1] -1731.524
+[1] -1716.581
+[1] -1707.49
+[1] -1699.73
+[1] -1699.72
+[1] -1696.42
+[1] -1695.472
+ [1] "NUDT1"    "OBFC1"    "ABHD8"    "TIMP4"    "TEX28"    "TOM1"    
+ [7] "NUS1"     "PPM1F"    "CTSL2"    "SPC25"    "NBR2"     "CEP27"   
+[13] "KIF20A"   "SMR3B"    "ADAM32"   "SORBS2"   "HS1BP3"   "RPL23A"  
+[19] "RASD2"    "CD163"    "C19orf24" "AMOTL1"   "JAK1"     "LARS2"   
+[25] "SKP1A"    "TP53"     "ASF1B"    "TMBIM4"   "PPM1B"    "TMEM58"  
+[31] "C12orf48" "CKS2"     "TCTN3"    "TRPM3"    "ARL11"    "POLQ"    
+[37] "TBX4"     "ZSCAN2"   "ATAD1"    "MAP1D"    "TGM1"     "XRN2"    
+[43] "VPS25"    "MYT1L"    "ZMYND8"   "ZNF765"   "VBP1"     "C3orf10" 
+[49] "ANGEL2"   "CENPM"    "C12orf44" "ZNF442"   "ZNF169"   "MAGEA4"  
+[55] "GGA3"     "CASD1"    "NRAS"     "TUBA1B"   "KSR1"     "OPTN"    
+[61] "ART3"     "CITED4"   "PSME3"   
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[49] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[61] FALSE FALSE FALSE
+[1] 2
+[1] 64
+[1] -1744.789
+[1] -1742.975
+[1] -1742.353
+[1] -1741.138
+[1] -1727.121
+[1] -1716.112
+[1] -1716.025
+[1] -1712.583
+ [1] "CENPJ"    "ABHD8"    "RASGRP3"  "CBLN3"    "DRAP1"    "VANGL1"  
+ [7] "RACGAP1"  "KRT8"     "MCTP1"    "AASDH"    "CDC25C"   "SCAPER"  
+[13] "NBR2"     "C8orf76"  "C3orf58"  "GABRG1"   "GOLSYN"   "DBN1"    
+[19] "AMOTL1"   "JAK1"     "C12orf59" "FILIP1"   "CCDC56"   "FBXW7"   
+[25] "SLC44A2"  "PPM1B"    "C6orf136" "PAH"      "GNRHR"    "CLCA1"   
+[31] "KCNK7"    "C12orf48" "CKS2"     "SSB"      "CHMP1A"   "TRPM3"   
+[37] "COL20A1"  "HSD17B11" "ZSCAN2"   "ADH1A"    "ATAD1"    "DHX8"    
+[43] "UMODL1"   "RAD51"    "XRN2"     "VPS25"    "SPAG5"    "BRCA2"   
+[49] "PLEKHA2"  "ZNF496"   "SIKE"     "SH3BGRL"  "VBP1"     "C3orf10" 
+[55] "CRTAC1"   "CENPM"    "EIF4EBP1" "JMJD2D"   "C6orf54"  "GGA3"    
+[61] "TUBA1B"   "CRISP2"   "KIAA2013" "ZNF436"  
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13]  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE  TRUE
+[49] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[61] FALSE FALSE FALSE FALSE
+[1] 3
+[1] 65
+[1] -1768.023
+[1] -1764.488
+[1] -1763.403
+[1] -1753.457
+[1] -1752.153
+[1] -1750.782
+[1] -1749.116
+[1] -1736.578
+[1] -1736.458
+[1] -1732.6
+[1] -1732.438
+[1] -1732.081
+[1] -1731.671
+ [1] "SUMO1"     "TRAIP"     "NLGN4X"    "KIAA0143"  "UGT8"      "OR4C46"   
+ [7] "PLA2G4A"   "GSX1"      "CNIH3"     "PDYN"      "RACGAP1"   "SPP1"     
+[13] "TRMT11"    "LRRC23"    "LAMP2"     "PITRM1"    "GABBR2"    "CPSF3L"   
+[19] "HDAC2"     "NBR2"      "HS1BP3"    "KCTD13"    "OIP5"      "ZHX1"     
+[25] "CRY2"      "NEK1"      "ZNF289"    "CD99L2"    "CCDC56"    "GPR68"    
+[31] "ASF1B"     "DVL3"      "PLA2G2E"   "ZNF799"    "THADA"     "LMCD1"    
+[37] "XRCC2"     "MECP2"     "TNFRSF11B" "THAP2"     "ZSCAN2"    "EXTL1"    
+[43] "HSD11B1"   "ZMYND15"   "IL4I1"     "SLC30A7"   "SCN1B"     "PPARGC1B" 
+[49] "RNF149"    "LOC126520" "SPRY2"     "CASKIN2"   "GMEB1"     "TEKT3"    
+[55] "C3orf10"   "MCM6"      "TASP1"     "PTEN"      "THOC2"     "TUBA1B"   
+[61] "AGPAT4"    "VSIG4"     "SHCBP1"    "TCEAL5"    "PSME3"    
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37]  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[49] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[61] FALSE FALSE FALSE FALSE FALSE
+[1] 2
+[1] 66
+[1] -1766.948
+[1] -1758.056
+[1] -1753.054
+[1] -1750.494
+[1] -1743.772
+[1] -1740.432
+[1] -1736.994
+[1] -1736.264
+ [1] "CENPQ"         "ACSL1"         "SLC6A8"        "ABHD8"        
+ [5] "ZNF57"         "FAM135A"       "C6orf128"      "SLC4A1AP"     
+ [9] "BEX1"          "CRIP3"         "KNTC1"         "COMMD8"       
+[13] "TMEM97"        "RAB18"         "NBR2"          "C8orf76"      
+[17] "C17orf53"      "SLC37A1"       "OIP5"          "SFXN3"        
+[21] "RINT1"         "RPL23AP13"     "DKFZp564N2472" "SOAT2"        
+[25] "GSN"           "EZH1"          "CYB5R1"        "TCERG1L"      
+[29] "PGLS"          "LOC144305"     "ANLN"          "MC4R"         
+[33] "CCDC56"        "SAA1"          "HOXB3"         "CHCHD7"       
+[37] "ESF1"          "LTF"           "NPL"           "ARMC6"        
+[41] "PLSCR4"        "CHMP1A"        "SOX1"          "XRCC2"        
+[45] "CCDC4"         "POLQ"          "TMEM100"       "ZSCAN2"       
+[49] "ATP6V0D2"      "FBLN5"         "IL4I1"         "PPA2"         
+[53] "NDUFA4L2"      "TMEM185A"      "TAC4"          "C3orf10"      
+[57] "RFX1"          "MCM6"          "KPNB1"         "OGDH"         
+[61] "ZCRB1"         "FABP7"         "PUSL1"         "TUBA1B"       
+[65] "UNQ1887"       "PSME3"        
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[13] FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE
+[49] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+[61] FALSE FALSE FALSE FALSE FALSE FALSE
+[1] 2
+> choice.hy <- G1.hy[[which.max(marginal.hy)]]
+> gene.hy <- name.genes.X1[choice.hy]
+> lm.hy <- lm(y1~X1[,choice.hy]-1)
+> hat.beta.hy <- rep(0,p)
+> hat.beta.hy[choice.hy] <- coef(lm.hy)
+> BIC.hy <- BIC(lm.hy) 
+> EBIC.hy <- BIC.hy + 2*lchoose(p,length(choice.hy))
+> print(gene.hy)
+[1] "KLHL13"   "DTL"      "NBR2"     "CRBN"     "ARHGAP19" "VPS25"    "GNL1"    
+[8] "GINS1"   
+> gene.hy%in%ham.genes
+[1] FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE
+> 
+> 
+> #########################
+> ## Freq prediction ######
+> #########################
+> ############
+> #1. LASSO ##
+> ############
+> 
+> fit.LASSO<-glmnet(X1,y1,intercept=FALSE,family="gaussian",alpha=1) #alpha=1 LASSO, alpha=0 Ridge 
+> hat.BETA.LASSO <- as.matrix(fit.LASSO$beta)
+> n.lambda <- length(fit.LASSO$lambda)
+> EBIC.LASSO0 <- rep(NA,n.lambda)
+> for (i0 in 1:n.lambda) {
++   choice.lasso=which(hat.BETA.LASSO[,i0]!=0)
++   len.choice <- length(choice.lasso)
++   if (len.choice>=1 && len.choice<=k0) {
++     EBIC.LASSO0[i0] <- BIC(lm(y1~X1[,choice.lasso]-1)) + 2*lchoose(p,len.choice) 
++   }
++ }
+> 
+> choice.LASSO <- which(hat.BETA.LASSO[,which.min(EBIC.LASSO0)]!=0)
+> NSP.LASSO <- length(choice.LASSO)
+> lm.LASSO <- lm(y1~X1[,choice.LASSO]-1)
+> hat.beta.LASSO <- rep0
+> hat.beta.LASSO[choice.LASSO] <- coef(lm.LASSO)
+> BIC.LASSO <- BIC(lm.LASSO)
+> EBIC.LASSO <- BIC.LASSO + 2*lchoose(p,length(choice.LASSO))
+> gene.LASSO <- name.genes.X1[choice.LASSO]
+> ###################################
+> #2. SCAD ##########################
+> ###################################
+> 
+> fit.SCAD<-ncvreg(X1,y1,family="gaussian",alpha=1,penalty="SCAD") #10 folds CV #
+> hat.BETA.SCAD <- as.matrix(fit.SCAD$beta)[-1,]
+> n.lambda <- length(fit.SCAD$lambda)
+> EBIC.SCAD0 <- rep(NA,n.lambda)
+> for (i0 in 1:n.lambda) {
++   choice.scad=which(hat.BETA.SCAD[,i0]!=0)
++   len.choice <- length(choice.scad)
++   if (len.choice>=1 && len.choice<=k0) {
++     EBIC.SCAD0[i0] <- BIC(lm(y1~X1[,choice.scad]-1)) + 2*lchoose(p,len.choice) 
++   }
++ }
+> choice.SCAD <- which(hat.BETA.SCAD[,which.min(EBIC.SCAD0)]!=0)
+> NSP.SCAD <- length(choice.SCAD)
+> lm.SCAD <- lm(y1~X1[,choice.SCAD]-1)
+> hat.beta.SCAD<- rep0
+> hat.beta.SCAD[choice.SCAD] <- coef(lm.SCAD)
+> BIC.SCAD <- BIC(lm(y1~X1[,choice.SCAD]-1))
+> EBIC.SCAD <- BIC.SCAD + 2*lchoose(p,length(choice.SCAD)) 
+> gene.SCAD <- name.genes.X1[choice.SCAD]
+> 
+> ####################################
+> #3. MCP ############################
+> ####################################
+> fit.MCP<-ncvreg(X1,y1,family="gaussian",gamma=10,alpha=1,penalty="MCP")
+> hat.BETA.MCP <- as.matrix(fit.MCP$beta)[-1,]
+> n.lambda <- length(fit.MCP$lambda)
+> EBIC.MCP0 <- rep(NA,n.lambda)
+> for (i0 in 1:n.lambda) {
++   choice.mcp=which(hat.BETA.MCP[,i0]!=0)
++   len.choice <- length(choice.mcp)
++   if (len.choice>=1 && len.choice<=k0) {
++     EBIC.MCP0[i0] <- BIC(lm(y1~X1[,choice.mcp]-1)) + 2*lchoose(p,len.choice) 
++   }
++ }
+> choice.MCP <- which(hat.BETA.MCP[,which.min(EBIC.MCP0)]!=0)
+> NSP.MCP <- length(choice.MCP)
+> lm.MCP <- lm(y1~X1[,choice.MCP]-1)
+> hat.beta.MCP <- rep0
+> hat.beta.MCP[choice.MCP] <- coef(lm.MCP)
+> BIC.MCP <- BIC(lm(y1~X1[,choice.MCP]-1))
+> EBIC.MCP <- BIC.MCP + 2*lchoose(p,length(choice.MCP)) 
+> gene.MCP <- name.genes.X1[choice.MCP]
+> ###################################
+> #4. ENET #########################
+> ###################################
+> 
+> fit.ENET<-glmnet(X1,y1,intercept=FALSE,family="gaussian",alpha=0.5) #alpha=0.5 ENET, alpha=0 Ridge 
+> hat.BETA.ENET <- as.matrix(fit.ENET$beta)
+> n.lambda <- length(fit.ENET$lambda)
+> EBIC.ENET0 <- rep(NA,n.lambda)
+> for (i0 in 1:n.lambda) {
++   choice.enet=which(hat.BETA.ENET[,i0]!=0)
++   len.choice <- length(choice.enet)
++   if (len.choice>=1 && len.choice<=k0) {
++     EBIC.ENET0[i0] <- BIC(lm(y1~X1[,choice.enet]-1)) + 2*lchoose(p,len.choice) 
++   }
++ }
+> choice.ENET <- which(hat.BETA.ENET[,which.min(EBIC.ENET0)]!=0)
+> NSP.ENET <- length(choice.ENET)
+> lm.ENET <- lm(y1~X1[,choice.ENET]-1)
+> hat.beta.ENET <- rep0
+> hat.beta.ENET[choice.ENET] <- coef(lm.ENET)
+> BIC.ENET <- BIC(lm(y1~X1[,choice.ENET]-1))
+> EBIC.ENET <- BIC.ENET + 2*lchoose(p,length(choice.ENET)) 
+> gene.ENET <- name.genes.X1[choice.ENET]
+> 
+> EBIC.ALL <- cbind(EBIC.hy,EBIC.SCAD,EBIC.MCP,EBIC.ENET,EBIC.LASSO)
+> BIC.ALL <- cbind(BIC.hy,BIC.SCAD,BIC.MCP,BIC.ENET,BIC.LASSO)
+> BIC.star <- data.frame(rbind(BIC.ALL,EBIC.ALL),row.names = c('BIC','EBIC'))
+> names(BIC.star) = c('hy','SCAD','MCP','ENET','LASSO')
+> ##########
+> ### CV ###
+> ##########
+> n1 <- ceiling(n*0.7)
+> n2 <- n - n1
+> REP = 500
+> MSE.hy <- rep(NA,REP)
+> MSE.SCAD <- rep(NA,REP)
+> MSE.MCP <- rep(NA,REP)
+> MSE.ENET <- rep(NA,REP)
+> MSE.LASSO <- rep(NA,REP)
+> for (i in 1:REP) {
++   set.seed(1314+i)
++   index <- sample(c(1:n))
++   X_shuffle <- X1[index,]
++   y_shuffle <- y1[index]
++   X2 <- X_shuffle[1:n1,] # training
++   y2 <- y_shuffle[1:n1] # training
++   X3 <-X_shuffle[-(1:n1),]  # testing
++   y3 <- y_shuffle[-(1:n1)] # testing
++   ## hy ###
++   beta.hy <- coef(lm(y2~X2[,choice.hy]))
++   pred.hy <- cbind(rep(1,n2),X3[,choice.hy])%*%beta.hy
++   MSE.hy[i] <- sqrt(sum((y3-pred.hy)^2)/(n2))
++   ## SCAD ###
++   beta.SCAD <- coef(lm(y2~X2[,choice.SCAD]))
++   pred.SCAD <- cbind(rep(1,n2),X3[,choice.SCAD])%*%beta.SCAD
++   MSE.SCAD[i] <- sqrt(sum((y3-pred.SCAD)^2)/(n2))
++   ## MCP ###
++   beta.MCP <- coef(lm(y2~X2[,choice.MCP]))
++   pred.MCP <- cbind(rep(1,n2),X3[,choice.MCP])%*%beta.MCP
++   MSE.MCP[i] <- sqrt(sum((y3-pred.MCP)^2)/(n2))
++   ## ENET ###
++   beta.ENET <- coef(lm(y2~X2[,choice.ENET]))
++   pred.ENET <- cbind(rep(1,n2),X3[,choice.ENET])%*%beta.ENET
++   MSE.ENET[i] <- sqrt(sum((y3-pred.ENET)^2)/(n2))
++   ## LASSO ###
++   beta.LASSO <- coef(lm(y2~X2[,choice.LASSO]))
++   pred.LASSO <- cbind(rep(1,n2),X3[,choice.LASSO])%*%beta.LASSO
++   MSE.LASSO[i] <- sqrt(sum((y3-pred.LASSO)^2)/(n2))
++ }
+> NSP.list <- list(choice.hy,choice.SCAD,choice.MCP,choice.ENET,choice.LASSO)
+> NSP <- unlist(lapply(NSP.list,length))
+> MSE.pred <- colMeans(cbind(MSE.hy,MSE.SCAD,MSE.MCP,MSE.ENET,MSE.LASSO))
+> result <- data.frame(cbind(NSP,MSE.pred,t(BIC.star)),
++                      row.names = c('FNVS-hy','SCAD','MCP','ENET','LASSO'))
+> names(result) <- c('NSP','MSE_Pred','BIC','EBIC')
+> 
+> result.tex <- xtable(result,digits = 2)
+> result.tex
+% latex table generated in R 3.5.1 by xtable 1.8-2 package
+% Mon Feb  3 15:07:37 2020
+\begin{table}[ht]
+\centering
+\begin{tabular}{rrrrr}
+  \hline
+ & NSP & MSE\_Pred & BIC & EBIC \\ 
+  \hline
+FNVS-hy & 8.00 & 0.60 & 985.93 & 1120.87 \\ 
+  SCAD & 4.00 & 0.68 & 1104.69 & 1176.42 \\ 
+  MCP & 4.00 & 0.68 & 1104.69 & 1176.42 \\ 
+  ENET & 5.00 & 0.68 & 1110.65 & 1198.68 \\ 
+  LASSO & 4.00 & 0.68 & 1104.69 & 1176.42 \\ 
+   \hline
+\end{tabular}
+\end{table}
+> result
+        NSP  MSE_Pred       BIC     EBIC
+FNVS-hy   8 0.6011070  985.9264 1120.873
+SCAD      4 0.6812116 1104.6934 1176.416
+MCP       4 0.6812116 1104.6934 1176.416
+ENET      5 0.6829855 1110.6525 1198.676
+LASSO     4 0.6812116 1104.6934 1176.416
+> 
+> #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<#
+> #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<#
+> ## save variables ##
+> #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>#
+> 
+> mem.size=list()
+> kk=0
+> for (i in ls()) {
++   kk=kk+1
++   mem.size[[kk]]=object.size(get(i))
++ }
+> var.ls <- ls()[unlist(mem.size)<1024*1024*8]
+> save(list = var.ls,file = paste0('Ana_BRCA.RData'))
+> 
+> ## ggplot ##
+> gamma.hy <- rep0
+> gamma.hy[choice.hy]=1
+> gamma.SCAD <- rep0
+> gamma.SCAD[choice.SCAD]=1
+> gamma.MCP <- rep0
+> gamma.MCP[choice.MCP]=1
+> gamma.ENET <- rep0
+> gamma.ENET[choice.ENET]=1
+> gamma.LASSO <- rep0
+> gamma.LASSO[choice.LASSO]=1
+> 
+> sum.hy <- summary(lm.hy)
+> sum.SCAD <- summary(lm.SCAD)
+> sum.MCP <- summary(lm.MCP)
+> sum.ENET <- summary(lm.ENET)
+> sum.LASSO <- summary(lm.LASSO)
+> 
+> p.hy <- sum.hy$coefficients[,4]
+> p.SCAD <- sum.SCAD$coefficients[,4]
+> p.MCP <- sum.MCP$coefficients[,4]
+> p.ENET <- sum.ENET$coefficients[,4]
+> p.LASSO <- sum.LASSO$coefficients[,4]
+> union.gamma <- colSums(rbind(gamma.hy,gamma.SCAD,gamma.MCP,gamma.ENET,gamma.LASSO))
+> union.nonzero <- which(union.gamma!=0)
+> gene.com <- name.genes.X1[union.nonzero]
+> 
+> all.BETA = rbind(hat.beta.hy,hat.beta.SCAD,hat.beta.MCP,hat.beta.ENET,hat.beta.LASSO)
+> all.beta <- all.BETA[,union.nonzero]
+> tag.metohd <- c('Proposed','SCAD','MCP','ENET','LASSO')
+> Method <- factor(tag.metohd,levels = tag.metohd[5:1])
+> data.beta<- data.frame(Method,all.beta)
+> names(data.beta) <- c('Method',gene.com)
+> data.heat <- melt(data.beta,id = 'Method',value.name = 'Coefficient')
+> p.value = matrix(NA,ncol = 5,nrow = length(union.nonzero))
+> colnames(p.value) <- tag.metohd
+> rownames(p.value) <- gene.com
+> p.value[,1][gene.com%in%gene.hy] <- p.hy
+> p.value[,2][gene.com%in%gene.SCAD] <- p.SCAD
+> p.value[,3][gene.com%in%gene.MCP] <- p.MCP
+> p.value[,4][gene.com%in%gene.ENET] <- p.ENET
+> p.value[,5][gene.com%in%gene.LASSO] <- p.LASSO
+> p.value = round(p.value,3)
+> 
+> ##
+> p.value1 <- as.list(t(p.value))
+> sml.001 <- which(c(t(p.value))<0.001)
+> p.value1[sml.001] <- c("<0.001")
+> 
+> ###
+> heat.plot <- ggplot(data.heat, aes(x = Method, y = variable, fill = Coefficient)) + 
++   geom_tile() +
++   scale_fill_gradientn(colours = c("cyan", "white", "red"), 
++                        values = scales::rescale(c(min(data.heat$Coefficient), 0, 
++                                                   max(data.heat$Coefficient)))) + 
++   ylab('Genes') + xlab('Methods') + 
++   theme(axis.title.x.bottom = element_text(face = 'bold',size=10)) + 
++   theme(axis.title.y.left = element_text(face = 'bold',size=10)) + 
++   geom_text(aes(label=unlist(p.value1)), fontface = 'bold', size = 3) +
++   theme(panel.background = element_rect(fill='white'))
+> heat.plot
+Warning message:
+Removed 25 rows containing missing values (geom_text). 
+> #ggsave('Heatmap.pdf', plot = heat.plot,dpi = 100, height = 6, width = 6)
+> ggsave('Heatmap.eps', plot = heat.plot,dpi = 100, height = 6, width = 6)
+Warning message:
+Removed 25 rows containing missing values (geom_text). 
+> 
+> 
+> marginal.data <- data.frame(k = 1:k0, Global = marginal.hy)
+> marginal.melt = melt(data = marginal.data,id.vars = 'k', variable.name = 'Method')
+> log.marginal <- ggplot(marginal.melt) + 
++   geom_line(aes(x = k, y=value, color = Method), size = 0.5) + 
++   geom_point(aes(x = k, y=value, color = Method,shape=Method), size = 1) + 
++   ylab('Log Marginal') + scale_x_discrete(limits = seq(1,k0,10)) +
++   scale_linetype_manual(values=c("solid","dotted"))
+> log.marginal
+> ggsave('Log_marginal.pdf',plot = log.marginal,dpi = 300, height = 6, width = 10)
+> 
+> #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<#
+> xtable(lm.hy)
+% latex table generated in R 3.5.1 by xtable 1.8-2 package
+% Mon Feb  3 15:07:38 2020
+\begin{table}[ht]
+\centering
+\begin{tabular}{rrrrr}
+  \hline
+ & Estimate & Std. Error & t value & Pr($>$$|$t$|$) \\ 
+  \hline
+X1[, choice.hy]KLHL13 & -0.1668 & 0.0267 & -6.25 & 0.0000 \\ 
+  X1[, choice.hy]DTL & 0.3171 & 0.0332 & 9.56 & 0.0000 \\ 
+  X1[, choice.hy]NBR2 & 0.3754 & 0.0297 & 12.64 & 0.0000 \\ 
+  X1[, choice.hy]CRBN & -0.1821 & 0.0264 & -6.89 & 0.0000 \\ 
+  X1[, choice.hy]ARHGAP19 & 0.1601 & 0.0275 & 5.82 & 0.0000 \\ 
+  X1[, choice.hy]VPS25 & 0.3033 & 0.0290 & 10.45 & 0.0000 \\ 
+  X1[, choice.hy]GNL1 & -0.1569 & 0.0261 & -6.01 & 0.0000 \\ 
+  X1[, choice.hy]GINS1 & 0.2045 & 0.0338 & 6.05 & 0.0000 \\ 
+   \hline
+\end{tabular}
+\end{table}
+> xtable(lm.SCAD)
+% latex table generated in R 3.5.1 by xtable 1.8-2 package
+% Mon Feb  3 15:07:38 2020
+\begin{table}[ht]
+\centering
+\begin{tabular}{rrrrr}
+  \hline
+ & Estimate & Std. Error & t value & Pr($>$$|$t$|$) \\ 
+  \hline
+X1[, choice.SCAD]DTL & 0.3786 & 0.0380 & 9.95 & 0.0000 \\ 
+  X1[, choice.SCAD]NBR2 & 0.3870 & 0.0321 & 12.05 & 0.0000 \\ 
+  X1[, choice.SCAD]C17orf53 & 0.1757 & 0.0400 & 4.39 & 0.0000 \\ 
+  X1[, choice.SCAD]VPS25 & 0.2284 & 0.0341 & 6.70 & 0.0000 \\ 
+   \hline
+\end{tabular}
+\end{table}
+> xtable(lm.MCP)
+% latex table generated in R 3.5.1 by xtable 1.8-2 package
+% Mon Feb  3 15:07:38 2020
+\begin{table}[ht]
+\centering
+\begin{tabular}{rrrrr}
+  \hline
+ & Estimate & Std. Error & t value & Pr($>$$|$t$|$) \\ 
+  \hline
+X1[, choice.MCP]DTL & 0.3786 & 0.0380 & 9.95 & 0.0000 \\ 
+  X1[, choice.MCP]NBR2 & 0.3870 & 0.0321 & 12.05 & 0.0000 \\ 
+  X1[, choice.MCP]C17orf53 & 0.1757 & 0.0400 & 4.39 & 0.0000 \\ 
+  X1[, choice.MCP]VPS25 & 0.2284 & 0.0341 & 6.70 & 0.0000 \\ 
+   \hline
+\end{tabular}
+\end{table}
+> xtable(lm.ENET)
+% latex table generated in R 3.5.1 by xtable 1.8-2 package
+% Mon Feb  3 15:07:38 2020
+\begin{table}[ht]
+\centering
+\begin{tabular}{rrrrr}
+  \hline
+ & Estimate & Std. Error & t value & Pr($>$$|$t$|$) \\ 
+  \hline
+X1[, choice.ENET]DTL & 0.3791 & 0.0381 & 9.96 & 0.0000 \\ 
+  X1[, choice.ENET]NBR2 & 0.3892 & 0.0324 & 12.02 & 0.0000 \\ 
+  X1[, choice.ENET]C17orf53 & 0.1871 & 0.0451 & 4.15 & 0.0000 \\ 
+  X1[, choice.ENET]TUBG1 & -0.0258 & 0.0469 & -0.55 & 0.5820 \\ 
+  X1[, choice.ENET]VPS25 & 0.2406 & 0.0406 & 5.93 & 0.0000 \\ 
+   \hline
+\end{tabular}
+\end{table}
+> xtable(lm.LASSO)
+% latex table generated in R 3.5.1 by xtable 1.8-2 package
+% Mon Feb  3 15:07:38 2020
+\begin{table}[ht]
+\centering
+\begin{tabular}{rrrrr}
+  \hline
+ & Estimate & Std. Error & t value & Pr($>$$|$t$|$) \\ 
+  \hline
+X1[, choice.LASSO]DTL & 0.3786 & 0.0380 & 9.95 & 0.0000 \\ 
+  X1[, choice.LASSO]NBR2 & 0.3870 & 0.0321 & 12.05 & 0.0000 \\ 
+  X1[, choice.LASSO]C17orf53 & 0.1757 & 0.0400 & 4.39 & 0.0000 \\ 
+  X1[, choice.LASSO]VPS25 & 0.2284 & 0.0341 & 6.70 & 0.0000 \\ 
+   \hline
+\end{tabular}
+\end{table}
+> 
+> sum.hy 
+
+Call:
+lm(formula = y1 ~ X1[, choice.hy] - 1)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-2.54520 -0.31592  0.03691  0.37587  1.68686 
+
+Coefficients:
+                        Estimate Std. Error t value Pr(>|t|)    
+X1[, choice.hy]KLHL13   -0.16677    0.02668  -6.250 8.56e-10 ***
+X1[, choice.hy]DTL       0.31713    0.03319   9.556  < 2e-16 ***
+X1[, choice.hy]NBR2      0.37541    0.02969  12.643  < 2e-16 ***
+X1[, choice.hy]CRBN     -0.18206    0.02643  -6.887 1.65e-11 ***
+X1[, choice.hy]ARHGAP19  0.16013    0.02751   5.821 1.03e-08 ***
+X1[, choice.hy]VPS25     0.30334    0.02902  10.453  < 2e-16 ***
+X1[, choice.hy]GNL1     -0.15690    0.02610  -6.012 3.45e-09 ***
+X1[, choice.hy]GINS1     0.20448    0.03381   6.048 2.81e-09 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.59 on 518 degrees of freedom
+Multiple R-squared:  0.6566,	Adjusted R-squared:  0.6513 
+F-statistic: 123.8 on 8 and 518 DF,  p-value: < 2.2e-16
+
+> sum.SCAD 
+
+Call:
+lm(formula = y1 ~ X1[, choice.SCAD] - 1)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-3.07203 -0.34059  0.04575  0.41929  1.63255 
+
+Coefficients:
+                          Estimate Std. Error t value Pr(>|t|)    
+X1[, choice.SCAD]DTL       0.37858    0.03803   9.955  < 2e-16 ***
+X1[, choice.SCAD]NBR2      0.38704    0.03211  12.053  < 2e-16 ***
+X1[, choice.SCAD]C17orf53  0.17567    0.04002   4.390 1.37e-05 ***
+X1[, choice.SCAD]VPS25     0.22844    0.03408   6.702 5.34e-11 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.6738 on 522 degrees of freedom
+Multiple R-squared:  0.5486,	Adjusted R-squared:  0.5451 
+F-statistic: 158.6 on 4 and 522 DF,  p-value: < 2.2e-16
+
+> sum.MCP 
+
+Call:
+lm(formula = y1 ~ X1[, choice.MCP] - 1)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-3.07203 -0.34059  0.04575  0.41929  1.63255 
+
+Coefficients:
+                         Estimate Std. Error t value Pr(>|t|)    
+X1[, choice.MCP]DTL       0.37858    0.03803   9.955  < 2e-16 ***
+X1[, choice.MCP]NBR2      0.38704    0.03211  12.053  < 2e-16 ***
+X1[, choice.MCP]C17orf53  0.17567    0.04002   4.390 1.37e-05 ***
+X1[, choice.MCP]VPS25     0.22844    0.03408   6.702 5.34e-11 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.6738 on 522 degrees of freedom
+Multiple R-squared:  0.5486,	Adjusted R-squared:  0.5451 
+F-statistic: 158.6 on 4 and 522 DF,  p-value: < 2.2e-16
+
+> sum.ENET 
+
+Call:
+lm(formula = y1 ~ X1[, choice.ENET] - 1)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-3.08227 -0.33987  0.04799  0.41924  1.64051 
+
+Coefficients:
+                          Estimate Std. Error t value Pr(>|t|)    
+X1[, choice.ENET]DTL       0.37905    0.03807   9.958  < 2e-16 ***
+X1[, choice.ENET]NBR2      0.38923    0.03238  12.022  < 2e-16 ***
+X1[, choice.ENET]C17orf53  0.18709    0.04509   4.150 3.89e-05 ***
+X1[, choice.ENET]TUBG1    -0.02584    0.04692  -0.551    0.582    
+X1[, choice.ENET]VPS25     0.24056    0.04059   5.927 5.63e-09 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.6743 on 521 degrees of freedom
+Multiple R-squared:  0.5488,	Adjusted R-squared:  0.5445 
+F-statistic: 126.8 on 5 and 521 DF,  p-value: < 2.2e-16
+
+> sum.LASSO 
+
+Call:
+lm(formula = y1 ~ X1[, choice.LASSO] - 1)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-3.07203 -0.34059  0.04575  0.41929  1.63255 
+
+Coefficients:
+                           Estimate Std. Error t value Pr(>|t|)    
+X1[, choice.LASSO]DTL       0.37858    0.03803   9.955  < 2e-16 ***
+X1[, choice.LASSO]NBR2      0.38704    0.03211  12.053  < 2e-16 ***
+X1[, choice.LASSO]C17orf53  0.17567    0.04002   4.390 1.37e-05 ***
+X1[, choice.LASSO]VPS25     0.22844    0.03408   6.702 5.34e-11 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.6738 on 522 degrees of freedom
+Multiple R-squared:  0.5486,	Adjusted R-squared:  0.5451 
+F-statistic: 158.6 on 4 and 522 DF,  p-value: < 2.2e-16
+
+> 

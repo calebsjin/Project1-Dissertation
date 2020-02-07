@@ -88,7 +88,6 @@
 \def\diag{{\rm diag}}
 
 
-\def\T{{ \mathrm{\scriptscriptstyle T} }}
 
 
 \newtheorem{theorem}{Theorem}
@@ -211,14 +210,15 @@ A possible drawback of our deterministic search is that the proposed algorithm c
 \end{itemize}
 Recall that  using $\eqref{eq:app:1}$ and  $\eqref{eq:app:2}$, calculating $\pi(\ueta|\uy,\bg^*)$ for all $\ueta \in \mathcal{N}_+(\bg^* )$ can be done simultaneously. Similarly, we can calculate $\pi(\bg|\uy,\ueta^*)$ for all $\bg \in \mathcal{N}_-({\ueta}^* ) $ at once.
 Using the notion of the Metropolis-Hasting algorithm, it is easy to check that the states of generated Markov chain by our sampling method is equivalent to the support of $\pi(\bg|\uy)$\textcolor{red}{(Revise it later)}. Let $\bg^{(t)}$ be the sample generated at iteration $t$. If the outcome from Algorithm \ref{alg:1}, $\hat{\bg}$, is not the global maximum, then we must observe at least one case that $\pi(\hat{\bg}|\uy)< \pi(\bg^{(t)}|\uy)$ (or equivalently $m(\uy|\hat{\bg})<m(\uy|\bg^{(t)})$) with probability one as $t\to \infty$. Therefore, if this case does not occur for sufficiently large $t$, we can treat $\hat{\bg}$ as the global maximum.
-\textcolor{blue}{However, this global maximum is unefficient because it require large enough $t$. To improve the efficiency of global search, We applied the idea from Simulated Annealing to Algorithm \ref{alg:2}:
+\textcolor{blue}{However, this global maximum is possibly unefficient because it may require large enough $t$ to make $m(\uy|\hat{\bg})<m(\uy|\bg^{(t)})$ happen. To improve the efficiency of global search, We applied the idea from Simulated Annealing to Algorithm \ref{alg:2}, so the step 4 in Algorithm \ref{alg:2} is as follows:
 \begin{itemize}
  \item[1.] Given $\bg^*$, generate $\ueta^*$ with probability,
-       $$\pi(\ueta|\uy,\bg^*)=\frac{\tilde{m}(\uy|\ueta)}{\sum_{\ueta \in \mathcal{N}_+(\bg^* )  } \tilde{m}(\uy|\ueta) }\mathbb{I}\{\ueta \in \mathcal{N}_+(\bg^* ) \},$$ where $\tilde{m}(\uy|\ueta)=\exp\{\frac{1}{\alpha}\log(m(\uy|\ueta)))\}.$ \\
+       $$\tilde{\pi}(\ueta|\uy,\bg^*)=\frac{\tilde{m}(\uy|\ueta)}{\sum_{\ueta \in \mathcal{N}_+(\bg^* )  } \tilde{m}(\uy|\ueta) }\mathbb{I}\{\ueta \in \mathcal{N}_+(\bg^* ) \},$$ where $\tilde{m}(\uy|\ueta)=\exp\{\frac{1}{\alpha}\log(m(\uy|\ueta)))\}.$ \\
  \item[2.] Given $\ueta^*$, generate $\bg^*$ with probability
-       $$\pi(\bg|\uy,\ueta^*)=\frac{\tilde{m}(\uy|\bg)}{\sum_{\bg \in \mathcal{N}_-({\ueta}^* )  } \tilde{m}(\uy|\bg) }\mathbb{I}\{\bg \in \mathcal{N}_-({\ueta}^* )  \},$$ where $\tilde{m}(\uy|\bg)=\exp\{\frac{1}{\alpha}\log(m(\uy|\bg))\}.$
+       $$\tilde{\pi}(\bg|\uy,\ueta^*)=\frac{\tilde{m}(\uy|\bg)}{\sum_{\bg \in \mathcal{N}_-({\ueta}^* )  } \tilde{m}(\uy|\bg) }\mathbb{I}\{\bg \in \mathcal{N}_-({\ueta}^* )  \},$$ where $\tilde{m}(\uy|\bg)=\exp\{\frac{1}{\alpha}\log(m(\uy|\bg))\}.$
 \end{itemize}
 }
+
 \begin{algorithm}[ht]
  \caption{Hybrid best subset search with a fixed $k$}\label{alg:2}
  \begin{itemize}
