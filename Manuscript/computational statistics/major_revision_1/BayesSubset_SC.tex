@@ -80,6 +80,7 @@ grestore
 \newcommand{\bg}{{\boldsymbol \gamma}} %
 \newcommand{\uepsilon}{{\boldsymbol \epsilon}} %
 \newcommand{\uSigma}{{\boldsymbol \Sigma}} %
+\newcommand{\uPsi}{{\boldsymbol \Psi}}
 \newcommand{\diag}{{\rm diag}} %
 % \newcommand{}{}
 %
@@ -307,24 +308,17 @@ which is equivalent to the extended Bayesian information criterion \citep{chen20
 
 
 \section{Simulation study}\label{sec:5}
-In this section, we investigate the variable selection performance of our best subset selection algorithm on simulated high-dimensional data. For $n=100$, we generate the data $\{(y_i,x_{i1},\ldots,x_{ip}):i=1,\ldots,n\}$ from the following linear regression model:
+In this section, we investigate the variable selection performance of our best subset selection algorithm on simulated high-dimensional data. We consider two cases. In case I, for $n=100$, we generate the data $\{(y_i,x_{i1},\ldots,x_{ip}):i=1,\ldots,n\}$ from the following linear regression model:
 \begin{eqnarray*}
-y_i\overset{ind}{\sim}\text{Normal}\left(\sum_{j=1}^p \beta_j x_{ij},\sigma^2_y\right),
+	y_i\overset{ind}{\sim}\text{Normal}\left(\sum_{j=1}^p \beta_j x_{ij},1\right),
 \end{eqnarray*}
-where $(x_{i1},\ldots,x_{ip})$ follows $\text{Normal}(\0_p,\uV)$ with $\uV=(v_{ij})_{p\times p}$ and $v_{ij}=\rho^{|i-j|}$, four $\beta_j$'s are randomly selected and then generated from $\text{Uniform}\{-1,-2,1,2\}$ independently, and the remaining $\beta$-coefficients are set equal to $0$, and $\sigma^2_y$ is variance of error item. 
+where $(x_{i1},\ldots,x_{ip})^\T \overset{iid}{\sim}\text{Normal}(\0_p,\uSigma)$ with $\uSigma=(\Sigma_{ij})_{p\times p}$ and $\Sigma_{ij}=\rho^{|i-j|}$, four $\beta_j$'s are randomly selected and then generated from $\text{Uniform}\{-1,-2,1,2\}$ independently, and the remaining $\beta$-coefficients are set equal to $0$. In case II, for $n=100$, we generate the data $\{(y_i,x_{i1},\ldots,x_{ip}):i=1,\ldots,n\}$ from the following linear regression model:
+\begin{eqnarray*}
+	y_i\overset{ind}{\sim}\text{Normal}\left(\sum_{j=1}^p \beta_j x_{ij},\sigma^2_{y}\right),
+\end{eqnarray*}
+where $\sigma^2_{y_i} = 1+0.01\sqrt{x_{i1}}$, $(x_{i1},\ldots,x_{ip})^\T \overset{iid}{\sim}\text{Normal}(\0_p,\uSigma)$ with $\uSigma\sim \mathcal{IW}(\uPsi, p+2)$, $\uPsi,=(\psi_{ij})_{p\times p}$ and $\psi_{ij}=\rho^{|i-j|}$, four $\beta_j$'s are randomly selected and then generated from $\text{Uniform}\{-1,-2,1,2\}$ independently, and the remaining $\beta$-coefficients are set equal to $0$. 
 
-We consider four different cases: 
-\begin{itemize}
-	\item [(i)] $p=200$, $\rho=0.1$, $\sigma^2_y = 1$,
-	\item [(ii)] $p=200$, $\rho=0.9$, $\sigma^2_y = 1$,
-	\item [(iii)] $p=1000$, $\rho=0.1$, $\sigma^2_y = 1$,
-	\item [(iv)] $p=1000$, $\rho=0.9$, $\sigma^2_y = 1$,
-	\item [(v)] $p=200$, $\rho=0.1$, $\sigma^2_y = 2$,
-	\item [(vi)] $p=200$, $\rho=0.9$, $\sigma^2_y = 2$,
-	\item [(vii)] $p=1000$, $\rho=0.1$, $\sigma^2_y = 2$,
-	\item [(viii)] $p=1000$, $\rho=0.9$, $\sigma^2_y = 2$.
-\end{itemize}
-We assume that there is no prior information. Hence, to make our prior distributions non-informative, we set $a_\sigma=b_\sigma=1$ and $\tau=(\log p)^2$, which satisfies the sufficient condition for model selection consistency discussed in Theorem \ref{thm:2}. We further assume that the true number of active predictors is unknown. Hence, we employ the proposed method in Section \ref{sec:4} for varying $k$ with $K=\lceil n^{2/3} \rceil =22$. For the hybrid search algorithm given in Algorithm \ref{alg:3}, we set $T=100$, which is a remarkably small number of iterations compared to existing stochastic search algorithms (e.g., \citealt{kirkpatrick1983optimization, george1993variable, hans2007shotgun}), and marginal correlations between the response and each predictor are used to define the initial value of $\hat{\bg}$. For comparison purposes, we also employ four popular penalized likelihood methods: LASSO \citep{tibshirani1996regression}, the elastic net \citep{zou2005regularization}, SCAD \citep{fan2001variable}, and MCP \citep{zhang2010nearly}, where the regularization parameters or tuning parameters are determined by the extended BIC in \eqref{ebic} to achieve a fair comparison with the proposed method. In this simulation study, LASSO and ENET are implemented by R package \texttt{glmnet} and  MCP and SCAD are performed by R package \texttt{ncvreg}. To evaluate the variable selection performance, we calculate false discovery rate, percentage of selecting the exact true model, average size of the selected model, and mean of Hamming distance based on $2,000$ Monte Carlo replications. False discovery rate is defined as $|\hat{\bg}\setminus \bg_*|/|\hat{\bg}|$ and Hamming distance is defined as $|\hat{\bg}\setminus \bg_* |+|\bg_* \setminus  \hat{\bg}|$, where $\bg_*$ denotes the index set of the true model.
+For both cases, we consider four different scenarios: (i) $p=200$, $\rho=0.1$, (ii) $p=200$, $\rho=0.9$, (iii) $p=1000$, $\rho=0.1$, and (iv) $p=1000$, $\rho=0.9$. We assume that there is no prior information. Hence, to make our prior distributions non-informative, we set $a_\sigma=b_\sigma=1$ and $\tau=(\log p)^2$, which satisfies the sufficient condition for model selection consistency discussed in Theorem \ref{thm:2}. We further assume that the true number of active predictors is unknown. Hence, we employ the proposed method in Section \ref{sec:4} for varying $k$ with $K=\lceil n^{2/3} \rceil =22$. For the hybrid search algorithm given in Algorithm \ref{alg:3}, we set $T=100$, which is a remarkably small number of iterations compared to existing stochastic search algorithms (e.g., \citealt{kirkpatrick1983optimization, george1993variable, hans2007shotgun}), and marginal correlations between the response and each predictor are used to define the initial value of $\hat{\bg}$. For comparison purposes, we also employ four popular penalized likelihood methods: LASSO \citep{tibshirani1996regression}, the elastic net \citep{zou2005regularization}, SCAD \citep{fan2001variable}, and MCP \citep{zhang2010nearly}, where the regularization parameters or tuning parameters are determined by the extended BIC in \eqref{ebic} to achieve a fair comparison with the proposed method. In this simulation study, LASSO and ENET are implemented by R package \texttt{glmnet} and  MCP and SCAD are performed by R package \texttt{ncvreg}. To evaluate the variable selection performance, we calculate false discovery rate, percentage of selecting the exact true model, average size of the selected model, and mean of Hamming distance based on $2,000$ Monte Carlo replications. False discovery rate is defined as $|\hat{\bg}\setminus \bg_*|/|\hat{\bg}|$ and Hamming distance is defined as $|\hat{\bg}\setminus \bg_* |+|\bg_* \setminus  \hat{\bg}|$, where $\bg_*$ denotes the index set of the true model.
 
 \begin{table}[h]
 \centering
